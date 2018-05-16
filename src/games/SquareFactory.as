@@ -18,18 +18,18 @@ package games {
 		}
 		public function shapeL():Array {
 			data = [
-				[0, 1, 0, 0], 
-				[0, 1, 0, 0], 
-				[0, 1, 1, 0], 
+				[1, 0, 0, 0], 
+				[1, 0, 0, 0], 
+				[1, 1, 0, 0], 
 				[0, 0, 0, 0]
 			];
 			return data;
 		}
 		public function shapeO():Array {
 			data = [
+				[0, 1, 1, 0], 
+				[0, 1, 1, 0], 
 				[0, 0, 0, 0], 
-				[0, 1, 1, 0], 
-				[0, 1, 1, 0], 
 				[0, 0, 0, 0]
 			];
 			return data;

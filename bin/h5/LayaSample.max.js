@@ -462,7 +462,6 @@ var Game=(function(){
 				this.gameData[i][j]=0;
 			}
 		}
-		console.log(this.gameData);
 		this.render.refresh(this.gameData);
 	}
 
@@ -490,6 +489,7 @@ var Game=(function(){
 		}
 	}
 
+	// 清楚数据
 	__proto.clearData=function(data){
 		for (var i=0;i < this.nextData.length;i++){
 			for (var j=0;j < this.nextData[0].length;j++){
@@ -498,10 +498,12 @@ var Game=(function(){
 		}
 	}
 
+	// 监听键盘
 	__proto.listenKeyboard=function(){
 		Laya.stage.on("keydown",this,this.console);
 	}
 
+	// 控制
 	__proto.console=function(){
 		if (KeyBoardManager.hasKeyDown(this.btnDown)){
 			this.controlDown();
@@ -512,25 +514,141 @@ var Game=(function(){
 		}
 	}
 
+	// 下、左、右
 	__proto.controlDown=function(){
-		this.clearData(this.nextData);
-		this.nextOrigin.y=this.nextOrigin.y+1;
-		this.setData(this.nextData);
-		this.render.refresh(this.gameData);
+		if(this.canDown(this.isValid)){
+			this.clearData(this.nextData);
+			this.nextOrigin.y=this.nextOrigin.y+1;
+			this.setData(this.nextData);
+			this.render.refresh(this.gameData);
+		}
 	}
 
 	__proto.controlLeft=function(){
-		this.clearData(this.nextData);
-		this.nextOrigin.x=this.nextOrigin.x-1;
-		this.setData(this.nextData);
-		this.render.refresh(this.gameData);
+		if(this.canLeft(this.isValid)){
+			this.clearData(this.nextData);
+			this.nextOrigin.x=this.nextOrigin.x-1;
+			this.setData(this.nextData);
+			this.render.refresh(this.gameData);
+		}
 	}
 
 	__proto.controlRight=function(){
-		this.clearData(this.nextData);
-		this.nextOrigin.x=this.nextOrigin.x+1;
-		this.setData(this.nextData);
+		if(this.canRight(this.isValid)){
+			this.clearData(this.nextData);
+			this.nextOrigin.x=this.nextOrigin.x+1;
+			this.setData(this.nextData);
+			this.render.refresh(this.gameData);
+		}
+	}
+
+	__proto.canDown=function(isValid){
+		var test={};
+		test.x=this.nextData.x+1;
+		test.y=this.nextData.y;
+		return isValid(test,this.data);
+	}
+
+	__proto.canLeft=function(isValid){
+		var test={};
+		test.x=this.nextData.x;
+		test.y=this.nextData.y-1;
+		return isValid(test,this.data);
+	}
+
+	__proto.canRight=function(isValid){
+		var test={};
+		test.x=this.nextData.x;
+		test.y=this.nextData.y+1;
+		return isValid(test,this.data);
+	}
+
+	// 检测点是否合法
+	__proto.check=function(pos,x,y){
+		if (pos.x+x < 0){
+			return false;
+			}else if (pos.x+x >=this.gameData.length){
+			return false;
+			}else if (pos.y+y < 0){
+			return false;
+			}else if (pos.y+y >=this.gameData[0].length){
+			return false;
+			}else if (this.gameData[pos.x+x][pos.y+y]===1){
+			return false;
+			}else {
+			return true;
+		}
+	}
+
+	__proto.isValid=function(pos,data){
+		for (var i=0;i < data.length;i++){
+			for (var j=0;j < data[0].length;j++){
+				if (data[i][j] !=0){
+					if (!this.check(pos,i,j)){
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	// 方块移动到底部固定
+	__proto.fixed=function(){
+		for (var i=0;i < this.nextData.length;i++){
+			for (var j=0;j < this.nextData[0].length;j++){
+				if (this.check(this.nextOrigin,i,j)){
+					if (this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]==2){
+						this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=1;
+					}
+				}
+			}
+		}
 		this.render.refresh(this.gameData);
+	}
+
+	// 消行
+	__proto.checkClear=function(){
+		var line=0;
+		for (var i=this.gameData.length-1;i >=0;i--){
+			var clear=true;
+			for (var j=0;j < this.gameData[0].length;j++){
+				if (this.gameData[i][j] !=1){
+					clear=false;
+					break ;
+				}
+			}
+			if (clear){
+				line+=1;
+				for (var m=i;m > 0;m--){
+					for (var n=0;n < this.gameData[0].length;n++){
+						this.gameData[m][n]=this.gameData[m-1][n];
+					}
+				}
+				for (var k=0;k < this.gameData[0].length;k++){
+					this.gameData[0][k]=0;
+				}
+				i++;
+			}
+		}
+		return line;
+	}
+
+	// 检查游戏结束
+	__proto.checkGameOver=function(){
+		var gameOver=false;
+		for (var i=0;i < this.gameData[0].length;i++){
+			if (this.gameData[1][i]===1){
+				gameOver=true;
+			}
+		}
+		return gameOver;
+	}
+
+	// 界面显示游戏结束
+	__proto.gameOver=function(win){
+		if (win){
+		}else {}
 	}
 
 	return Game;
@@ -627,18 +745,18 @@ var SquareFactory=(function(){
 
 	__proto.shapeL=function(){
 		this.data=[
-		[0,1,0,0],
-		[0,1,0,0],
-		[0,1,1,0],
+		[1,0,0,0],
+		[1,0,0,0],
+		[1,1,0,0],
 		[0,0,0,0]];
 		return this.data;
 	}
 
 	__proto.shapeO=function(){
 		this.data=[
+		[0,1,1,0],
+		[0,1,1,0],
 		[0,0,0,0],
-		[0,1,1,0],
-		[0,1,1,0],
 		[0,0,0,0]];
 		return this.data;
 	}
@@ -2574,44 +2692,21 @@ var Style=(function(){
 		return false;
 	}
 
-	/**X 轴缩放值。*/
-	__getset(0,__proto,'scaleX',function(){
-		return this._tf.scaleX;
-		},function(value){
-		this.setScaleX(value);
-	});
-
-	/**元素应用的 2D 或 3D 转换的值。该属性允许我们对元素进行旋转、缩放、移动或倾斜。*/
-	__getset(0,__proto,'transform',function(){
-		return this.getTransform();
-		},function(value){
-		this.setTransform(value);
-	});
-
-	/**定义转换，只是用 X 轴的值。*/
-	__getset(0,__proto,'translateX',function(){
-		return this._tf.translateX;
-		},function(value){
-		this.setTranslateX(value);
-	});
-
-	/**定义转换，只是用 Y 轴的值。*/
-	__getset(0,__proto,'translateY',function(){
-		return this._tf.translateY;
-		},function(value){
-		this.setTranslateY(value);
-	});
-
-	/**Y 轴缩放值。*/
-	__getset(0,__proto,'scaleY',function(){
-		return this._tf.scaleY;
-		},function(value){
-		this.setScaleY(value);
+	/**是否为绝对定位。*/
+	__getset(0,__proto,'absolute',function(){
+		return true;
 	});
 
 	/**表示元素是否显示为块级元素。*/
 	__getset(0,__proto,'block',function(){
 		return (this._type & 0x1)!=0;
+	});
+
+	/**X 轴缩放值。*/
+	__getset(0,__proto,'scaleX',function(){
+		return this._tf.scaleX;
+		},function(value){
+		this.setScaleX(value);
 	});
 
 	/**定义沿着 Y 轴的 2D 倾斜转换。*/
@@ -2621,13 +2716,6 @@ var Style=(function(){
 		this.setSkewY(value);
 	});
 
-	/**定义旋转角度。*/
-	__getset(0,__proto,'rotate',function(){
-		return this._tf.rotate;
-		},function(value){
-		this.setRotate(value);
-	});
-
 	/**定义沿着 X 轴的 2D 倾斜转换。*/
 	__getset(0,__proto,'skewX',function(){
 		return this._tf.skewX;
@@ -2635,9 +2723,25 @@ var Style=(function(){
 		this.setSkewX(value);
 	});
 
-	/**表示元素的左内边距。*/
-	__getset(0,__proto,'paddingLeft',function(){
-		return 0;
+	/**定义旋转角度。*/
+	__getset(0,__proto,'rotate',function(){
+		return this._tf.rotate;
+		},function(value){
+		this.setRotate(value);
+	});
+
+	/**元素应用的 2D 或 3D 转换的值。该属性允许我们对元素进行旋转、缩放、移动或倾斜。*/
+	__getset(0,__proto,'transform',function(){
+		return this.getTransform();
+		},function(value){
+		this.setTransform(value);
+	});
+
+	/**Y 轴缩放值。*/
+	__getset(0,__proto,'scaleY',function(){
+		return this._tf.scaleY;
+		},function(value){
+		this.setScaleY(value);
 	});
 
 	/**表示元素的上内边距。*/
@@ -2645,9 +2749,23 @@ var Style=(function(){
 		return 0;
 	});
 
-	/**是否为绝对定位。*/
-	__getset(0,__proto,'absolute',function(){
-		return true;
+	/**定义转换，只是用 Y 轴的值。*/
+	__getset(0,__proto,'translateY',function(){
+		return this._tf.translateY;
+		},function(value){
+		this.setTranslateY(value);
+	});
+
+	/**定义转换，只是用 X 轴的值。*/
+	__getset(0,__proto,'translateX',function(){
+		return this._tf.translateX;
+		},function(value){
+		this.setTranslateX(value);
+	});
+
+	/**表示元素的左内边距。*/
+	__getset(0,__proto,'paddingLeft',function(){
+		return 0;
 	});
 
 	Style.__init__=function(){
@@ -2737,39 +2855,28 @@ var Font=(function(){
 	}
 
 	/**
-	*表示是否为密码格式。
+	*规定添加到文本的修饰。
 	*/
-	__getset(0,__proto,'password',function(){
-		return (this._type & 0x400)!==0;
+	__getset(0,__proto,'decoration',function(){
+		return this._decoration ? this._decoration.value :"none";
 		},function(value){
-		value ? (this._type |=0x400):(this._type &=~0x400);
-	});
-
-	/**
-	*表示颜色字符串。
-	*/
-	__getset(0,__proto,'color',function(){
-		return this._color.strColor;
-		},function(value){
-		this._color=Color$1.create(value);
-	});
-
-	/**
-	*表示是否为斜体。
-	*/
-	__getset(0,__proto,'italic',function(){
-		return (this._type & 0x200)!==0;
-		},function(value){
-		value ? (this._type |=0x200):(this._type &=~0x200);
-	});
-
-	/**
-	*表示是否为粗体。
-	*/
-	__getset(0,__proto,'bold',function(){
-		return (this._type & 0x800)!==0;
-		},function(value){
-		value ? (this._type |=0x800):(this._type &=~0x800);
+		var strs=value.split(' ');
+		this._decoration || (this._decoration={});
+		switch (strs[0]){
+			case '_':
+				this._decoration.type='underline'
+				break ;
+			case '-':
+				this._decoration.type='line-through'
+				break ;
+			case 'overline':
+				this._decoration.type='overline'
+				break ;
+			default :
+				this._decoration.type=strs[0];
+			}
+		strs[1] && (this._decoration.color=Color$1.create(strs));
+		this._decoration.value=value;
 	});
 
 	/**
@@ -2800,28 +2907,39 @@ var Font=(function(){
 	});
 
 	/**
-	*规定添加到文本的修饰。
+	*表示颜色字符串。
 	*/
-	__getset(0,__proto,'decoration',function(){
-		return this._decoration ? this._decoration.value :"none";
+	__getset(0,__proto,'color',function(){
+		return this._color.strColor;
 		},function(value){
-		var strs=value.split(' ');
-		this._decoration || (this._decoration={});
-		switch (strs[0]){
-			case '_':
-				this._decoration.type='underline'
-				break ;
-			case '-':
-				this._decoration.type='line-through'
-				break ;
-			case 'overline':
-				this._decoration.type='overline'
-				break ;
-			default :
-				this._decoration.type=strs[0];
-			}
-		strs[1] && (this._decoration.color=Color$1.create(strs));
-		this._decoration.value=value;
+		this._color=Color$1.create(value);
+	});
+
+	/**
+	*表示是否为粗体。
+	*/
+	__getset(0,__proto,'bold',function(){
+		return (this._type & 0x800)!==0;
+		},function(value){
+		value ? (this._type |=0x800):(this._type &=~0x800);
+	});
+
+	/**
+	*表示是否为斜体。
+	*/
+	__getset(0,__proto,'italic',function(){
+		return (this._type & 0x200)!==0;
+		},function(value){
+		value ? (this._type |=0x200):(this._type &=~0x200);
+	});
+
+	/**
+	*表示是否为密码格式。
+	*/
+	__getset(0,__proto,'password',function(){
+		return (this._type & 0x400)!==0;
+		},function(value){
+		value ? (this._type |=0x400):(this._type &=~0x400);
 	});
 
 	Font.__init__=function(){
@@ -3231,11 +3349,45 @@ var Event=(function(){
 		return Laya.stage.mouseY;
 	});
 
+	/**鼠标在 Stage 上的 X 轴坐标*/
+	__getset(0,__proto,'stageX',function(){
+		return Laya.stage.mouseX;
+	});
+
+	/**
+	*表示键在键盘上的位置。这对于区分在键盘上多次出现的键非常有用。<br>
+	*例如，您可以根据此属性的值来区分左 Shift 键和右 Shift 键：左 Shift 键的值为 KeyLocation.LEFT，右 Shift 键的值为 KeyLocation.RIGHT。另一个示例是区分标准键盘 (KeyLocation.STANDARD)与数字键盘 (KeyLocation.NUM_PAD)上按下的数字键。
+	*/
+	__getset(0,__proto,'keyLocation',function(){
+		return this.nativeEvent.keyLocation;
+	});
+
 	/**
 	*包含按下或释放的键的字符代码值。字符代码值为英文键盘值。
 	*/
 	__getset(0,__proto,'charCode',function(){
 		return this.nativeEvent.charCode;
+	});
+
+	/**
+	*表示 Shift 键是处于活动状态 (true)还是非活动状态 (false)。
+	*/
+	__getset(0,__proto,'shiftKey',function(){
+		return this.nativeEvent.shiftKey;
+	});
+
+	/**
+	*表示 Ctrl 键是处于活动状态 (true)还是非活动状态 (false)。
+	*/
+	__getset(0,__proto,'ctrlKey',function(){
+		return this.nativeEvent.ctrlKey;
+	});
+
+	/**
+	*表示 Alt 键是处于活动状态 (true)还是非活动状态 (false)。
+	*/
+	__getset(0,__proto,'altKey',function(){
+		return this.nativeEvent.altKey;
 	});
 
 	/**
@@ -3256,40 +3408,6 @@ var Event=(function(){
 			}
 		}
 		return arr;
-	});
-
-	/**
-	*表示键在键盘上的位置。这对于区分在键盘上多次出现的键非常有用。<br>
-	*例如，您可以根据此属性的值来区分左 Shift 键和右 Shift 键：左 Shift 键的值为 KeyLocation.LEFT，右 Shift 键的值为 KeyLocation.RIGHT。另一个示例是区分标准键盘 (KeyLocation.STANDARD)与数字键盘 (KeyLocation.NUM_PAD)上按下的数字键。
-	*/
-	__getset(0,__proto,'keyLocation',function(){
-		return this.nativeEvent.keyLocation;
-	});
-
-	/**
-	*表示 Ctrl 键是处于活动状态 (true)还是非活动状态 (false)。
-	*/
-	__getset(0,__proto,'ctrlKey',function(){
-		return this.nativeEvent.ctrlKey;
-	});
-
-	/**
-	*表示 Alt 键是处于活动状态 (true)还是非活动状态 (false)。
-	*/
-	__getset(0,__proto,'altKey',function(){
-		return this.nativeEvent.altKey;
-	});
-
-	/**
-	*表示 Shift 键是处于活动状态 (true)还是非活动状态 (false)。
-	*/
-	__getset(0,__proto,'shiftKey',function(){
-		return this.nativeEvent.shiftKey;
-	});
-
-	/**鼠标在 Stage 上的 X 轴坐标*/
-	__getset(0,__proto,'stageX',function(){
-		return Laya.stage.mouseX;
 	});
 
 	Event.EMPTY=new Event();
@@ -4084,10 +4202,10 @@ var Filter=(function(){
 	Laya.imps(__proto,{"laya.filters.IFilter":true})
 	/**@private */
 	__proto.callNative=function(sp){}
-	/**@private 滤镜类型。*/
-	__getset(0,__proto,'type',function(){return-1});
 	/**@private 滤镜动作。*/
 	__getset(0,__proto,'action',function(){return this._action });
+	/**@private 滤镜类型。*/
+	__getset(0,__proto,'type',function(){return-1});
 	Filter.BLUR=0x10;
 	Filter.COLOR=0x20;
 	Filter.GLOW=0x08;
@@ -5186,14 +5304,14 @@ var Rectangle=(function(){
 		return false;
 	}
 
-	/**此矩形右侧的 X 轴坐标。 x 和 width 属性的和。*/
-	__getset(0,__proto,'right',function(){
-		return this.x+this.width;
-	});
-
 	/**此矩形底端的 Y 轴坐标。y 和 height 属性的和。*/
 	__getset(0,__proto,'bottom',function(){
 		return this.y+this.height;
+	});
+
+	/**此矩形右侧的 X 轴坐标。 x 和 width 属性的和。*/
+	__getset(0,__proto,'right',function(){
+		return this.x+this.width;
 	});
 
 	Rectangle._getBoundPointS=function(x,y,width,height){
@@ -5241,53 +5359,6 @@ var Rectangle=(function(){
 var SoundManager=(function(){
 	function SoundManager(){}
 	__class(SoundManager,'laya.media.SoundManager');
-	__getset(1,SoundManager,'useAudioMusic',function(){
-		return SoundManager._useAudioMusic;
-		},function(value){
-		SoundManager._useAudioMusic=value;
-		if (value){
-			SoundManager._musicClass=AudioSound;
-			}else{
-			SoundManager._musicClass=null;
-		}
-	});
-
-	/**
-	*失去焦点后是否自动停止背景音乐。
-	*@param v Boolean 失去焦点后是否自动停止背景音乐。
-	*
-	*/
-	/**
-	*失去焦点后是否自动停止背景音乐。
-	*/
-	__getset(1,SoundManager,'autoStopMusic',function(){
-		return SoundManager._autoStopMusic;
-		},function(v){
-		Laya.stage.off("blur",null,SoundManager._stageOnBlur);
-		Laya.stage.off("focus",null,SoundManager._stageOnFocus);
-		Laya.stage.off("visibilitychange",null,SoundManager._visibilityChange);
-		SoundManager._autoStopMusic=v;
-		if (v){
-			Laya.stage.on("blur",null,SoundManager._stageOnBlur);
-			Laya.stage.on("focus",null,SoundManager._stageOnFocus);
-			Laya.stage.on("visibilitychange",null,SoundManager._visibilityChange);
-		}
-	});
-
-	/**
-	*背景音乐和所有音效是否静音。
-	*/
-	__getset(1,SoundManager,'muted',function(){
-		return SoundManager._muted;
-		},function(value){
-		if (value==SoundManager._muted)return;
-		if (value){
-			SoundManager.stopAllSound();
-		}
-		SoundManager.musicMuted=value;
-		SoundManager._muted=value;
-	});
-
 	/**
 	*背景音乐（不包括音效）是否静音。
 	*/
@@ -5316,6 +5387,17 @@ var SoundManager=(function(){
 		}
 	});
 
+	__getset(1,SoundManager,'useAudioMusic',function(){
+		return SoundManager._useAudioMusic;
+		},function(value){
+		SoundManager._useAudioMusic=value;
+		if (value){
+			SoundManager._musicClass=AudioSound;
+			}else{
+			SoundManager._musicClass=null;
+		}
+	});
+
 	/**
 	*所有音效（不包括背景音乐）是否静音。
 	*/
@@ -5323,6 +5405,42 @@ var SoundManager=(function(){
 		return SoundManager._soundMuted;
 		},function(value){
 		SoundManager._soundMuted=value;
+	});
+
+	/**
+	*背景音乐和所有音效是否静音。
+	*/
+	__getset(1,SoundManager,'muted',function(){
+		return SoundManager._muted;
+		},function(value){
+		if (value==SoundManager._muted)return;
+		if (value){
+			SoundManager.stopAllSound();
+		}
+		SoundManager.musicMuted=value;
+		SoundManager._muted=value;
+	});
+
+	/**
+	*失去焦点后是否自动停止背景音乐。
+	*@param v Boolean 失去焦点后是否自动停止背景音乐。
+	*
+	*/
+	/**
+	*失去焦点后是否自动停止背景音乐。
+	*/
+	__getset(1,SoundManager,'autoStopMusic',function(){
+		return SoundManager._autoStopMusic;
+		},function(v){
+		Laya.stage.off("blur",null,SoundManager._stageOnBlur);
+		Laya.stage.off("focus",null,SoundManager._stageOnFocus);
+		Laya.stage.off("visibilitychange",null,SoundManager._visibilityChange);
+		SoundManager._autoStopMusic=v;
+		if (v){
+			Laya.stage.on("blur",null,SoundManager._stageOnBlur);
+			Laya.stage.on("focus",null,SoundManager._stageOnFocus);
+			Laya.stage.on("visibilitychange",null,SoundManager._visibilityChange);
+		}
 	});
 
 	SoundManager.addChannel=function(channel){
@@ -5878,14 +5996,14 @@ var Render$1=(function(){
 		Laya.stage._loop();
 	}
 
-	/**目前使用的渲染器。*/
-	__getset(1,Render,'context',function(){
-		return Render._context;
-	});
-
 	/**渲染使用的原生画布引用。 */
 	__getset(1,Render,'canvas',function(){
 		return Render._mainCanvas.source;
+	});
+
+	/**目前使用的渲染器。*/
+	__getset(1,Render,'context',function(){
+		return Render._context;
 	});
 
 	Render._context=null;
@@ -7346,10 +7464,10 @@ var ResourceManager=(function(){
 	}
 
 	/**
-	*唯一标识 ID 。
+	*此管理器所管理资源的累计内存，以字节为单位。
 	*/
-	__getset(0,__proto,'id',function(){
-		return this._id;
+	__getset(0,__proto,'memorySize',function(){
+		return this._memorySize;
 	});
 
 	/**
@@ -7365,10 +7483,10 @@ var ResourceManager=(function(){
 	});
 
 	/**
-	*此管理器所管理资源的累计内存，以字节为单位。
+	*唯一标识 ID 。
 	*/
-	__getset(0,__proto,'memorySize',function(){
-		return this._memorySize;
+	__getset(0,__proto,'id',function(){
+		return this._id;
 	});
 
 	/**
@@ -7458,49 +7576,6 @@ SoundManager;
 var Browser=(function(){
 	function Browser(){}
 	__class(Browser,'laya.utils.Browser');
-	/**设备像素比。*/
-	__getset(1,Browser,'pixelRatio',function(){
-		Browser.__init__();
-		if (Browser.userAgent.indexOf("Mozilla/6.0(Linux; Android 6.0; HUAWEI NXT-AL10 Build/HUAWEINXT-AL10)")>-1)return 2;
-		return RunDriver.getPixelRatio();
-	});
-
-	/**浏览器窗口物理高度，其值等于clientHeight *pixelRatio，并且浏览器发生反转之后，宽高会互换。*/
-	__getset(1,Browser,'height',function(){
-		Browser.__init__();
-		return ((Laya.stage && Laya.stage.canvasRotation)? Browser.clientWidth :Browser.clientHeight)*Browser.pixelRatio;
-	});
-
-	/**
-	*浏览器窗口可视宽度。
-	*通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerWidth(包含滚动条宽度)> document.body.clientWidth(不包含滚动条宽度)，如果前者为0或为空，则选择后者。
-	*/
-	__getset(1,Browser,'clientWidth',function(){
-		Browser.__init__();
-		return Browser.window.innerWidth || Browser.document.body.clientWidth;
-	});
-
-	/**浏览器原生 window 对象的引用。*/
-	__getset(1,Browser,'window',function(){
-		Browser.__init__();
-		return Browser._window;
-	});
-
-	/**
-	*浏览器窗口可视高度。
-	*通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerHeight(包含滚动条高度)> document.body.clientHeight(不包含滚动条高度)> document.documentElement.clientHeight(不包含滚动条高度)，如果前者为0或为空，则选择后者。
-	*/
-	__getset(1,Browser,'clientHeight',function(){
-		Browser.__init__();
-		return Browser.window.innerHeight || Browser.document.body.clientHeight || Browser.document.documentElement.clientHeight;
-	});
-
-	/**浏览器窗口物理宽度，其值等于clientWidth *pixelRatio，并且浏览器发生反转之后，宽高会互换。*/
-	__getset(1,Browser,'width',function(){
-		Browser.__init__();
-		return ((Laya.stage && Laya.stage.canvasRotation)? Browser.clientHeight :Browser.clientWidth)*Browser.pixelRatio;
-	});
-
 	/**画布容器，用来盛放画布的容器。方便对画布进行控制*/
 	__getset(1,Browser,'container',function(){
 		Browser.__init__();
@@ -7514,10 +7589,53 @@ var Browser=(function(){
 		Browser._container=value;
 	});
 
+	/**设备像素比。*/
+	__getset(1,Browser,'pixelRatio',function(){
+		Browser.__init__();
+		if (Browser.userAgent.indexOf("Mozilla/6.0(Linux; Android 6.0; HUAWEI NXT-AL10 Build/HUAWEINXT-AL10)")>-1)return 2;
+		return RunDriver.getPixelRatio();
+	});
+
 	/**浏览器原生 document 对象的引用。*/
 	__getset(1,Browser,'document',function(){
 		Browser.__init__();
 		return Browser._document;
+	});
+
+	/**
+	*浏览器窗口可视高度。
+	*通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerHeight(包含滚动条高度)> document.body.clientHeight(不包含滚动条高度)> document.documentElement.clientHeight(不包含滚动条高度)，如果前者为0或为空，则选择后者。
+	*/
+	__getset(1,Browser,'clientHeight',function(){
+		Browser.__init__();
+		return Browser.window.innerHeight || Browser.document.body.clientHeight || Browser.document.documentElement.clientHeight;
+	});
+
+	/**浏览器原生 window 对象的引用。*/
+	__getset(1,Browser,'window',function(){
+		Browser.__init__();
+		return Browser._window;
+	});
+
+	/**浏览器窗口物理高度，其值等于clientHeight *pixelRatio，并且浏览器发生反转之后，宽高会互换。*/
+	__getset(1,Browser,'height',function(){
+		Browser.__init__();
+		return ((Laya.stage && Laya.stage.canvasRotation)? Browser.clientWidth :Browser.clientHeight)*Browser.pixelRatio;
+	});
+
+	/**浏览器窗口物理宽度，其值等于clientWidth *pixelRatio，并且浏览器发生反转之后，宽高会互换。*/
+	__getset(1,Browser,'width',function(){
+		Browser.__init__();
+		return ((Laya.stage && Laya.stage.canvasRotation)? Browser.clientHeight :Browser.clientWidth)*Browser.pixelRatio;
+	});
+
+	/**
+	*浏览器窗口可视宽度。
+	*通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerWidth(包含滚动条宽度)> document.body.clientWidth(不包含滚动条宽度)，如果前者为0或为空，则选择后者。
+	*/
+	__getset(1,Browser,'clientWidth',function(){
+		Browser.__init__();
+		return Browser.window.innerWidth || Browser.document.body.clientWidth;
 	});
 
 	Browser.__init__=function(){
@@ -8143,24 +8261,19 @@ var Byte=(function(){
 	}
 
 	/**
-	*获取此对象的 ArrayBuffer 数据，数据只包含有效数据部分。
+	*移动或返回 Byte 对象的读写指针的当前位置（以字节为单位）。下一次调用读取方法时将在此位置开始读取，或者下一次调用写入方法时将在此位置开始写入。
 	*/
-	__getset(0,__proto,'buffer',function(){
-		var rstBuffer=this._d_.buffer;
-		if (rstBuffer.byteLength==this.length)return rstBuffer;
-		return rstBuffer.slice(0,this.length);
+	__getset(0,__proto,'pos',function(){
+		return this._pos_;
+		},function(value){
+		this._pos_=value;
 	});
 
 	/**
-	*<p> <code>Byte</code> 实例的字节序。取值为：<code>BIG_ENDIAN</code> 或 <code>BIG_ENDIAN</code> 。</p>
-	*<p>主机字节序，是 CPU 存放数据的两种不同顺序，包括小端字节序和大端字节序。通过 <code>getSystemEndian</code> 可以获取当前系统的字节序。</p>
-	*<p> <code>BIG_ENDIAN</code> ：大端字节序，地址低位存储值的高位，地址高位存储值的低位。有时也称之为网络字节序。<br/>
-	*<code>LITTLE_ENDIAN</code> ：小端字节序，地址低位存储值的低位，地址高位存储值的高位。</p>
+	*可从字节流的当前位置到末尾读取的数据的字节数。
 	*/
-	__getset(0,__proto,'endian',function(){
-		return this._xd_ ? "littleEndian" :"bigEndian";
-		},function(endianStr){
-		this._xd_=(endianStr=="littleEndian");
+	__getset(0,__proto,'bytesAvailable',function(){
+		return this._length-this._pos_;
 	});
 
 	/**
@@ -8179,19 +8292,24 @@ var Byte=(function(){
 	});
 
 	/**
-	*移动或返回 Byte 对象的读写指针的当前位置（以字节为单位）。下一次调用读取方法时将在此位置开始读取，或者下一次调用写入方法时将在此位置开始写入。
+	*<p> <code>Byte</code> 实例的字节序。取值为：<code>BIG_ENDIAN</code> 或 <code>BIG_ENDIAN</code> 。</p>
+	*<p>主机字节序，是 CPU 存放数据的两种不同顺序，包括小端字节序和大端字节序。通过 <code>getSystemEndian</code> 可以获取当前系统的字节序。</p>
+	*<p> <code>BIG_ENDIAN</code> ：大端字节序，地址低位存储值的高位，地址高位存储值的低位。有时也称之为网络字节序。<br/>
+	*<code>LITTLE_ENDIAN</code> ：小端字节序，地址低位存储值的低位，地址高位存储值的高位。</p>
 	*/
-	__getset(0,__proto,'pos',function(){
-		return this._pos_;
-		},function(value){
-		this._pos_=value;
+	__getset(0,__proto,'endian',function(){
+		return this._xd_ ? "littleEndian" :"bigEndian";
+		},function(endianStr){
+		this._xd_=(endianStr=="littleEndian");
 	});
 
 	/**
-	*可从字节流的当前位置到末尾读取的数据的字节数。
+	*获取此对象的 ArrayBuffer 数据，数据只包含有效数据部分。
 	*/
-	__getset(0,__proto,'bytesAvailable',function(){
-		return this._length-this._pos_;
+	__getset(0,__proto,'buffer',function(){
+		var rstBuffer=this._d_.buffer;
+		if (rstBuffer.byteLength==this.length)return rstBuffer;
+		return rstBuffer.slice(0,this.length);
 	});
 
 	Byte.getSystemEndian=function(){
@@ -8843,16 +8961,6 @@ var HitArea=(function(){
 	}
 
 	/**
-	*可点击区域，可以设置绘制一系列矢量图作为点击区域（目前只支持圆形，矩形，多边形）
-	*/
-	__getset(0,__proto,'hit',function(){
-		if (!this._hit)this._hit=new Graphics();
-		return this._hit;
-		},function(value){
-		this._hit=value;
-	});
-
-	/**
 	*不可点击区域，可以设置绘制一系列矢量图作为非点击区域（目前只支持圆形，矩形，多边形）
 	*/
 	__getset(0,__proto,'unHit',function(){
@@ -8860,6 +8968,16 @@ var HitArea=(function(){
 		return this._unHit;
 		},function(value){
 		this._unHit=value;
+	});
+
+	/**
+	*可点击区域，可以设置绘制一系列矢量图作为点击区域（目前只支持圆形，矩形，多边形）
+	*/
+	__getset(0,__proto,'hit',function(){
+		if (!this._hit)this._hit=new Graphics();
+		return this._hit;
+		},function(value){
+		this._hit=value;
 	});
 
 	HitArea.isHitGraphic=function(x,y,graphic){
@@ -9016,25 +9134,21 @@ var HTMLChar=(function(){
 	}
 
 	/**
+	*高度。
+	*/
+	__getset(0,__proto,'height',function(){
+		return this._h;
+		},function(value){
+		this._h=value;
+	});
+
+	/**
 	*宽度。
 	*/
 	__getset(0,__proto,'width',function(){
 		return this._w;
 		},function(value){
 		this._w=value;
-	});
-
-	/**
-	*此对象存储的 X 轴坐标值。
-	*当设置此值时，如果此对象有绑定的 Sprite 对象，则改变 Sprite 对象的属性 x 的值。
-	*/
-	__getset(0,__proto,'x',function(){
-		return this._x;
-		},function(value){
-		if (this._sprite){
-			this._sprite.x=value;
-		}
-		this._x=value;
 	});
 
 	/**
@@ -9051,12 +9165,16 @@ var HTMLChar=(function(){
 	});
 
 	/**
-	*高度。
+	*此对象存储的 X 轴坐标值。
+	*当设置此值时，如果此对象有绑定的 Sprite 对象，则改变 Sprite 对象的属性 x 的值。
 	*/
-	__getset(0,__proto,'height',function(){
-		return this._h;
+	__getset(0,__proto,'x',function(){
+		return this._x;
 		},function(value){
-		this._h=value;
+		if (this._sprite){
+			this._sprite.x=value;
+		}
+		this._x=value;
 	});
 
 	HTMLChar._isWordRegExp=new RegExp("[\\w\.]","");
@@ -10933,27 +11051,27 @@ var AtlasResourceManager=(function(){
 		return this._atlaserArray[index];
 	}
 
-	__getset(1,AtlasResourceManager,'instance',function(){
-		if (!AtlasResourceManager._Instance){
-			AtlasResourceManager._Instance=new AtlasResourceManager(laya.webgl.atlas.AtlasResourceManager.atlasTextureWidth,laya.webgl.atlas.AtlasResourceManager.atlasTextureHeight,16,laya.webgl.atlas.AtlasResourceManager.maxTextureCount);
-		}
-		return AtlasResourceManager._Instance;
-	});
-
-	__getset(1,AtlasResourceManager,'enabled',function(){
-		return Config.atlasEnable;
-	});
-
 	__getset(1,AtlasResourceManager,'atlasLimitWidth',function(){
 		return AtlasResourceManager._atlasLimitWidth;
 		},function(value){
 		AtlasResourceManager._atlasLimitWidth=value;
 	});
 
+	__getset(1,AtlasResourceManager,'enabled',function(){
+		return Config.atlasEnable;
+	});
+
 	__getset(1,AtlasResourceManager,'atlasLimitHeight',function(){
 		return AtlasResourceManager._atlasLimitHeight;
 		},function(value){
 		AtlasResourceManager._atlasLimitHeight=value;
+	});
+
+	__getset(1,AtlasResourceManager,'instance',function(){
+		if (!AtlasResourceManager._Instance){
+			AtlasResourceManager._Instance=new AtlasResourceManager(laya.webgl.atlas.AtlasResourceManager.atlasTextureWidth,laya.webgl.atlas.AtlasResourceManager.atlasTextureHeight,16,laya.webgl.atlas.AtlasResourceManager.maxTextureCount);
+		}
+		return AtlasResourceManager._Instance;
 	});
 
 	AtlasResourceManager._enable=function(){
@@ -15131,7 +15249,7 @@ var Resource=(function(_super){
 
 	__class(Resource,'laya.resource.Resource',_super);
 	var __proto=Resource.prototype;
-	Laya.imps(__proto,{"laya.resource.ICreateResource":true,"laya.resource.IDispose":true})
+	Laya.imps(__proto,{"laya.resource.IDispose":true,"laya.resource.ICreateResource":true})
 	/**
 	*@private
 	*/
@@ -15301,48 +15419,6 @@ var Resource=(function(_super){
 	}
 
 	/**
-	*@private
-	*/
-	/**
-	*占用内存尺寸。
-	*/
-	__getset(0,__proto,'memorySize',function(){
-		return this._memorySize;
-		},function(value){
-		var offsetValue=value-this._memorySize;
-		this._memorySize=value;
-		this.resourceManager && this.resourceManager.addSize(offsetValue);
-	});
-
-	/**
-	*@private
-	*/
-	__getset(0,__proto,'_loaded',null,function(value){
-		this.__loaded=value;
-	});
-
-	/**
-	*获取是否已加载完成。
-	*/
-	__getset(0,__proto,'loaded',function(){
-		return this.__loaded;
-	});
-
-	/**
-	*获取唯一标识ID,通常用于识别。
-	*/
-	__getset(0,__proto,'id',function(){
-		return this._$1__id;
-	});
-
-	/**
-	*是否已处理。
-	*/
-	__getset(0,__proto,'destroyed',function(){
-		return this._destroyed;
-	});
-
-	/**
 	*设置资源组名。
 	*/
 	/**
@@ -15355,18 +15431,25 @@ var Resource=(function(_super){
 	});
 
 	/**
-	*资源管理员。
-	*/
-	__getset(0,__proto,'resourceManager',function(){
-		return this._resourceManager;
-	});
-
-	/**
 	*获取资源的URL地址。
 	*@return URL地址。
 	*/
 	__getset(0,__proto,'url',function(){
 		return this._url;
+	});
+
+	/**
+	*是否已处理。
+	*/
+	__getset(0,__proto,'destroyed',function(){
+		return this._destroyed;
+	});
+
+	/**
+	*资源管理员。
+	*/
+	__getset(0,__proto,'resourceManager',function(){
+		return this._resourceManager;
 	});
 
 	/**
@@ -15381,6 +15464,41 @@ var Resource=(function(_super){
 	*/
 	__getset(0,__proto,'referenceCount',function(){
 		return this._referenceCount;
+	});
+
+	/**
+	*获取是否已加载完成。
+	*/
+	__getset(0,__proto,'loaded',function(){
+		return this.__loaded;
+	});
+
+	/**
+	*@private
+	*/
+	__getset(0,__proto,'_loaded',null,function(value){
+		this.__loaded=value;
+	});
+
+	/**
+	*@private
+	*/
+	/**
+	*占用内存尺寸。
+	*/
+	__getset(0,__proto,'memorySize',function(){
+		return this._memorySize;
+		},function(value){
+		var offsetValue=value-this._memorySize;
+		this._memorySize=value;
+		this.resourceManager && this.resourceManager.addSize(offsetValue);
+	});
+
+	/**
+	*获取唯一标识ID,通常用于识别。
+	*/
+	__getset(0,__proto,'id',function(){
+		return this._$1__id;
 	});
 
 	Resource.getResourceByID=function(id){
@@ -15933,19 +16051,11 @@ var Node=(function(_super){
 		this.timer.clear(caller,method);
 	}
 
-	/**
-	*子对象数量。
-	*/
-	__getset(0,__proto,'numChildren',function(){
-		return this._childs.length;
-	});
-
-	/**
-	*[只读]是否已经销毁。对象销毁后不能再使用。
-	*@return
-	*/
-	__getset(0,__proto,'destroyed',function(){
-		return this._destroyed;
+	/**表示是否在显示列表中显示。*/
+	__getset(0,__proto,'displayedInStage',function(){
+		if (this._getBit(0x1))return this._displayedInStage;
+		this._setUpNoticeType(0x1);
+		return this._displayedInStage;
 	});
 
 	/**父节点。*/
@@ -15970,11 +16080,19 @@ var Node=(function(_super){
 		}
 	});
 
-	/**表示是否在显示列表中显示。*/
-	__getset(0,__proto,'displayedInStage',function(){
-		if (this._getBit(0x1))return this._displayedInStage;
-		this._setUpNoticeType(0x1);
-		return this._displayedInStage;
+	/**
+	*子对象数量。
+	*/
+	__getset(0,__proto,'numChildren',function(){
+		return this._childs.length;
+	});
+
+	/**
+	*[只读]是否已经销毁。对象销毁后不能再使用。
+	*@return
+	*/
+	__getset(0,__proto,'destroyed',function(){
+		return this._destroyed;
 	});
 
 	Node.ARRAY_EMPTY=[];
@@ -16674,11 +16792,10 @@ var SoundChannel=(function(_super){
 	}
 
 	/**
-	*音量范围从 0（静音）至 1（最大音量）。
+	*获取总时间。
 	*/
-	__getset(0,__proto,'volume',function(){
-		return 1;
-		},function(v){
+	__getset(0,__proto,'duration',function(){
+		return 0;
 	});
 
 	/**
@@ -16689,10 +16806,11 @@ var SoundChannel=(function(_super){
 	});
 
 	/**
-	*获取总时间。
+	*音量范围从 0（静音）至 1（最大音量）。
 	*/
-	__getset(0,__proto,'duration',function(){
-		return 0;
+	__getset(0,__proto,'volume',function(){
+		return 1;
+		},function(v){
 	});
 
 	return SoundChannel;
@@ -17105,9 +17223,9 @@ var HttpRequest=(function(_super){
 		http.onerror=http.onabort=http.onprogress=http.onload=null;
 	}
 
-	/**请求的地址。*/
-	__getset(0,__proto,'url',function(){
-		return this._http.responseURL;
+	/**返回的数据。*/
+	__getset(0,__proto,'data',function(){
+		return this._data;
 	});
 
 	/**
@@ -17117,9 +17235,9 @@ var HttpRequest=(function(_super){
 		return this._http;
 	});
 
-	/**返回的数据。*/
-	__getset(0,__proto,'data',function(){
-		return this._data;
+	/**请求的地址。*/
+	__getset(0,__proto,'url',function(){
+		return this._http.responseURL;
 	});
 
 	return HttpRequest;
@@ -17434,11 +17552,6 @@ var Loader=(function(_super){
 		this.event("complete",(this.data instanceof Array)? [this.data] :this.data);
 	}
 
-	/**加载地址。*/
-	__getset(0,__proto,'url',function(){
-		return this._url;
-	});
-
 	/**返回的数据。*/
 	__getset(0,__proto,'data',function(){
 		return this._data;
@@ -17452,6 +17565,11 @@ var Loader=(function(_super){
 	/**加载类型。*/
 	__getset(0,__proto,'type',function(){
 		return this._type;
+	});
+
+	/**加载地址。*/
+	__getset(0,__proto,'url',function(){
+		return this._url;
 	});
 
 	Loader.checkNext=function(){
@@ -17747,26 +17865,31 @@ var Texture=(function(_super){
 		this.setTo(bitmap,this.uv);
 	}
 
-	/**激活并获取资源。*/
-	__getset(0,__proto,'source',function(){
-		if (!this.bitmap)return null;
-		this.bitmap.activeResource();
-		return this.bitmap.source;
+	/**
+	*设置线性采样的状态（目前只能第一次绘制前设置false生效,来关闭线性采样）。
+	*/
+	/**
+	*获取当前纹理是否启用了线性采样。
+	*/
+	__getset(0,__proto,'isLinearSampling',function(){
+		return Render$1.isWebGL ? (this.bitmap.minFifter !=0x2600):true;
+		},function(value){
+		if (!value && Render$1.isWebGL){
+			if (!value && (this.bitmap.minFifter==-1)&& (this.bitmap.magFifter==-1)){
+				this.bitmap.minFifter=0x2600;
+				this.bitmap.magFifter=0x2600;
+				this.bitmap.enableMerageInAtlas=false;
+			}
+		}
 	});
 
-	/**
-	*表示是否加载成功，只能表示初次载入成功（通常包含下载和载入）,并不能完全表示资源是否可立即使用（资源管理机制释放影响等）。
-	*/
-	__getset(0,__proto,'loaded',function(){
-		return this._loaded;
-	});
-
-	/**
-	*表示资源是否已释放。
-	*/
-	__getset(0,__proto,'released',function(){
-		if (!this.bitmap)return true;
-		return this.bitmap.released;
+	/**实际高度。*/
+	__getset(0,__proto,'height',function(){
+		if (this._h)return this._h;
+		return (this.uv && this.uv!==Texture.DEF_UV)? (this.uv[5]-this.uv[1])*this.bitmap.height :this.bitmap.height;
+		},function(value){
+		this._h=value;
+		this.sourceHeight || (this.sourceHeight=value);
 	});
 
 	/**实际宽度。*/
@@ -17776,6 +17899,21 @@ var Texture=(function(_super){
 		},function(value){
 		this._w=value;
 		this.sourceWidth || (this.sourceWidth=value);
+	});
+
+	/**激活并获取资源。*/
+	__getset(0,__proto,'source',function(){
+		if (!this.bitmap)return null;
+		this.bitmap.activeResource();
+		return this.bitmap.source;
+	});
+
+	/**
+	*表示资源是否已释放。
+	*/
+	__getset(0,__proto,'released',function(){
+		if (!this.bitmap)return true;
+		return this.bitmap.released;
 	});
 
 	/**
@@ -17800,31 +17938,11 @@ var Texture=(function(_super){
 		}
 	});
 
-	/**实际高度。*/
-	__getset(0,__proto,'height',function(){
-		if (this._h)return this._h;
-		return (this.uv && this.uv!==Texture.DEF_UV)? (this.uv[5]-this.uv[1])*this.bitmap.height :this.bitmap.height;
-		},function(value){
-		this._h=value;
-		this.sourceHeight || (this.sourceHeight=value);
-	});
-
 	/**
-	*设置线性采样的状态（目前只能第一次绘制前设置false生效,来关闭线性采样）。
+	*表示是否加载成功，只能表示初次载入成功（通常包含下载和载入）,并不能完全表示资源是否可立即使用（资源管理机制释放影响等）。
 	*/
-	/**
-	*获取当前纹理是否启用了线性采样。
-	*/
-	__getset(0,__proto,'isLinearSampling',function(){
-		return Render$1.isWebGL ? (this.bitmap.minFifter !=0x2600):true;
-		},function(value){
-		if (!value && Render$1.isWebGL){
-			if (!value && (this.bitmap.minFifter==-1)&& (this.bitmap.magFifter==-1)){
-				this.bitmap.minFifter=0x2600;
-				this.bitmap.magFifter=0x2600;
-				this.bitmap.enableMerageInAtlas=false;
-			}
-		}
+	__getset(0,__proto,'loaded',function(){
+		return this._loaded;
 	});
 
 	Texture.moveUV=function(offsetX,offsetY,uv){
@@ -18151,177 +18269,34 @@ var CSSStyle=(function(_super){
 		return (this._type & 0x2)===0 && (this._type & 0x4)===0;
 	}
 
-	/**
-	*是否显示为块级元素。
-	*/
-	__getset(0,__proto,'block',_super.prototype._$get_block,function(value){
-		value ? (this._type |=0x1):(this._type &=(~0x1));
-	});
-
-	/**
-	*垂直对齐方式。
-	*/
-	__getset(0,__proto,'valign',function(){
-		return CSSStyle._valigndef[this._aligns[1]];
-		},function(value){
-		this._aligns===CSSStyle._ALIGNS && (this._aligns=[0,0,0]);
-		this._aligns[1]=CSSStyle._valigndef[value];
-	});
-
-	/**
-	*高度。
-	*/
-	__getset(0,__proto,'height',null,function(h){
-		this._type |=0x2000;
-		if ((typeof h=='string')){
-			if (this._calculation("height",h))return;
-			h=parseInt(h);
-		}
-		this.size(-1,h);
-	});
-
-	/**
-	*宽度。
-	*/
-	__getset(0,__proto,'width',null,function(w){
-		this._type |=0x8;
-		if ((typeof w=='string')){
-			var offset=w.indexOf('auto');
-			if (offset >=0){
-				this._type |=0x40000;
-				w=w.substr(0,offset);
-			}
-			if (this._calculation("width",w))return;
-			w=parseInt(w);
-		}
-		this.size(w,-1);
-	});
-
-	/**
-	*字体粗细。
-	*/
-	__getset(0,__proto,'fontWeight',function(){
-		return this._font.weight;
-		},function(value){
-		this._createFont().weight=value;
-	});
-
-	/**
-	*表示左边距。
-	*/
-	__getset(0,__proto,'left',null,function(value){
-		var ower=this._ower;
-		if (((typeof value=='string'))){
-			if (value==="center")
-				value="50% -50% 0";
-			else if (value==="right")
-			value="100% -100% 0";
-			if (this._calculation("left",value))return;
-			value=parseInt(value);
-		}
-		ower.x=value;
+	__getset(0,__proto,'_rotate',null,function(value){
+		this._ower.rotation=value;
 	});
 
 	__getset(0,__proto,'_translate',null,function(value){
 		this.translate(value[0],value[1]);
 	});
 
+	/**
+	*规定元素应该生成的框的类型。
+	*/
+	__getset(0,__proto,'display',null,function(value){
+		switch (value){
+			case '':
+				this._type &=~0x2;
+				this.visible=true;
+				break ;
+			case 'none':
+				this._type |=0x2;
+				this.visible=false;
+				this._ower._layoutLater();
+				break ;
+			}
+	});
+
 	/**@inheritDoc */
-	__getset(0,__proto,'absolute',function(){
-		return (this._type & 0x4)!==0;
-	});
-
-	/**
-	*表示上边距。
-	*/
-	__getset(0,__proto,'top',null,function(value){
-		var ower=this._ower;
-		if (((typeof value=='string'))){
-			if (value==="middle")
-				value="50% -50% 0";
-			else if (value==="bottom")
-			value="100% -100% 0";
-			if (this._calculation("top",value))return;
-			value=parseInt(value);
-		}
-		ower.y=value;
-	});
-
-	/**
-	*水平对齐方式。
-	*/
-	__getset(0,__proto,'align',function(){
-		return CSSStyle._aligndef[this._aligns[0]];
-		},function(value){
-		this._aligns===CSSStyle._ALIGNS && (this._aligns=[0,0,0]);
-		this._aligns[0]=CSSStyle._aligndef[value];
-	});
-
-	/**
-	*表示是否加粗。
-	*/
-	__getset(0,__proto,'bold',function(){
-		return this._font.bold;
-		},function(value){
-		this._createFont().bold=value;
-	});
-
-	/**
-	*边距信息。
-	*/
-	__getset(0,__proto,'padding',function(){
-		return this._padding;
-		},function(value){
-		this._padding=value;
-	});
-
-	/**
-	*行间距。
-	*/
-	__getset(0,__proto,'leading',function(){
-		return this._spacing[1];
-		},function(d){
-		((typeof d=='string'))&& (d=parseInt(d+""));
-		this._spacing===CSSStyle._SPACING && (this._spacing=[0,0]);
-		this._spacing[1]=d;
-	});
-
-	/**
-	*是否是行元素。
-	*/
-	__getset(0,__proto,'lineElement',function(){
-		return (this._type & 0x10000)!=0;
-		},function(value){
-		value ? (this._type |=0x10000):(this._type &=(~0x10000));
-	});
-
-	/**
-	*浮动方向。
-	*/
-	__getset(0,__proto,'cssFloat',function(){
-		return (this._type & 0x8000)!=0 ? "right" :"left";
-		},function(value){
-		this.lineElement=false;
-		value==="right" ? (this._type |=0x8000):(this._type &=(~0x8000));
-	});
-
-	/**
-	*添加到文本的修饰。
-	*/
-	__getset(0,__proto,'textDecoration',function(){
-		return this._font.decoration;
-		},function(value){
-		this._createFont().decoration=value;
-	});
-
-	/**
-	*设置如何处理元素内的空白。
-	*/
-	__getset(0,__proto,'whiteSpace',function(){
-		return (this._type & 0x20000)? "nowrap" :"";
-		},function(type){
-		type==="nowrap" && (this._type |=0x20000);
-		type==="none" && (this._type &=~0x20000);
+	__getset(0,__proto,'paddingLeft',function(){
+		return this.padding[3];
 	});
 
 	__getset(0,__proto,'background',null,function(value){
@@ -18334,123 +18309,6 @@ var CSSStyle=(function(_super){
 		this._ower.conchModel && this._ower.conchModel.bgColor(value);
 		this._type |=0x4000;
 		this._ower._renderType |=0x100;
-	});
-
-	/**
-	*表示是否换行。
-	*/
-	__getset(0,__proto,'wordWrap',function(){
-		return (this._type & 0x20000)===0;
-		},function(value){
-		value ? (this._type &=~0x20000):(this._type |=0x20000);
-	});
-
-	/**
-	*字体颜色。
-	*/
-	__getset(0,__proto,'color',function(){
-		return this._font.color;
-		},function(value){
-		this._createFont().color=value;
-	});
-
-	/**
-	*<p>指定文本字段是否是密码文本字段。</p>
-	*如果此属性的值为 true，则文本字段被视为密码文本字段，并使用星号而不是实际字符来隐藏输入的字符。如果为 false，则不会将文本字段视为密码文本字段。
-	*/
-	__getset(0,__proto,'password',function(){
-		return this._font.password;
-		},function(value){
-		this._createFont().password=value;
-	});
-
-	/**
-	*背景颜色。
-	*/
-	__getset(0,__proto,'backgroundColor',function(){
-		return this._bgground ? this._bgground.color :null;
-		},function(value){
-		if (value==='none')this._bgground=null;
-		else (this._bgground || (this._bgground={}),this._bgground.color=value);
-		this._ower.conchModel && this._ower.conchModel.bgColor(value);
-		this._ower._renderType |=0x100;
-	});
-
-	/**
-	*字体信息。
-	*/
-	__getset(0,__proto,'font',function(){
-		return this._font.toString();
-		},function(value){
-		this._createFont().set(value);
-	});
-
-	/**
-	*文本的粗细。
-	*/
-	__getset(0,__proto,'weight',null,function(value){
-		this._createFont().weight=value;
-	});
-
-	/**
-	*间距。
-	*/
-	__getset(0,__proto,'letterSpacing',function(){
-		return this._spacing[0];
-		},function(d){
-		((typeof d=='string'))&& (d=parseInt(d+""));
-		this._spacing===CSSStyle._SPACING && (this._spacing=[0,0]);
-		this._spacing[0]=d;
-	});
-
-	/**
-	*字体大小。
-	*/
-	__getset(0,__proto,'fontSize',function(){
-		return this._font.size;
-		},function(value){
-		this._createFont().size=value;
-	});
-
-	/**
-	*表示是否为斜体。
-	*/
-	__getset(0,__proto,'italic',function(){
-		return this._font.italic;
-		},function(value){
-		this._createFont().italic=value;
-	});
-
-	/**
-	*字体系列。
-	*/
-	__getset(0,__proto,'fontFamily',function(){
-		return this._font.family;
-		},function(value){
-		this._createFont().family=value;
-	});
-
-	/**
-	*<p>描边宽度（以像素为单位）。</p>
-	*默认值0，表示不描边。
-	*@default 0
-	*/
-	__getset(0,__proto,'stroke',function(){
-		return this._font.stroke[0];
-		},function(value){
-		if (this._createFont().stroke===Font._STROKE)this._font.stroke=[0,"#000000"];
-		this._font.stroke[0]=value;
-	});
-
-	/**
-	*<p>描边颜色，以字符串表示。</p>
-	*@default "#000000";
-	*/
-	__getset(0,__proto,'strokeColor',function(){
-		return this._font.stroke[1];
-		},function(value){
-		if (this._createFont().stroke===Font._STROKE)this._font.stroke=[0,"#000000"];
-		this._font.stroke[1]=value;
 	});
 
 	/**
@@ -18481,6 +18339,77 @@ var CSSStyle=(function(_super){
 		this._ower._renderType |=0x100;
 	});
 
+	/**@inheritDoc */
+	__getset(0,__proto,'absolute',function(){
+		return (this._type & 0x4)!==0;
+	});
+
+	/**
+	*<p>描边颜色，以字符串表示。</p>
+	*@default "#000000";
+	*/
+	__getset(0,__proto,'strokeColor',function(){
+		return this._font.stroke[1];
+		},function(value){
+		if (this._createFont().stroke===Font._STROKE)this._font.stroke=[0,"#000000"];
+		this._font.stroke[1]=value;
+	});
+
+	/**
+	*<p>描边宽度（以像素为单位）。</p>
+	*默认值0，表示不描边。
+	*@default 0
+	*/
+	__getset(0,__proto,'stroke',function(){
+		return this._font.stroke[0];
+		},function(value){
+		if (this._createFont().stroke===Font._STROKE)this._font.stroke=[0,"#000000"];
+		this._font.stroke[0]=value;
+	});
+
+	/**
+	*字体颜色。
+	*/
+	__getset(0,__proto,'color',function(){
+		return this._font.color;
+		},function(value){
+		this._createFont().color=value;
+	});
+
+	/**
+	*添加到文本的修饰。
+	*/
+	__getset(0,__proto,'textDecoration',function(){
+		return this._font.decoration;
+		},function(value){
+		this._createFont().decoration=value;
+	});
+
+	/**
+	*字体粗细。
+	*/
+	__getset(0,__proto,'fontWeight',function(){
+		return this._font.weight;
+		},function(value){
+		this._createFont().weight=value;
+	});
+
+	/**
+	*文本的粗细。
+	*/
+	__getset(0,__proto,'weight',null,function(value){
+		this._createFont().weight=value;
+	});
+
+	/**
+	*字体系列。
+	*/
+	__getset(0,__proto,'fontFamily',function(){
+		return this._font.family;
+		},function(value){
+		this._createFont().family=value;
+	});
+
 	/**
 	*边框的颜色。
 	*/
@@ -18498,6 +18427,184 @@ var CSSStyle=(function(_super){
 	});
 
 	/**
+	*垂直对齐方式。
+	*/
+	__getset(0,__proto,'valign',function(){
+		return CSSStyle._valigndef[this._aligns[1]];
+		},function(value){
+		this._aligns===CSSStyle._ALIGNS && (this._aligns=[0,0,0]);
+		this._aligns[1]=CSSStyle._valigndef[value];
+	});
+
+	/**
+	*设置如何处理元素内的空白。
+	*/
+	__getset(0,__proto,'whiteSpace',function(){
+		return (this._type & 0x20000)? "nowrap" :"";
+		},function(type){
+		type==="nowrap" && (this._type |=0x20000);
+		type==="none" && (this._type &=~0x20000);
+	});
+
+	/**
+	*间距。
+	*/
+	__getset(0,__proto,'letterSpacing',function(){
+		return this._spacing[0];
+		},function(d){
+		((typeof d=='string'))&& (d=parseInt(d+""));
+		this._spacing===CSSStyle._SPACING && (this._spacing=[0,0]);
+		this._spacing[0]=d;
+	});
+
+	/**
+	*背景颜色。
+	*/
+	__getset(0,__proto,'backgroundColor',function(){
+		return this._bgground ? this._bgground.color :null;
+		},function(value){
+		if (value==='none')this._bgground=null;
+		else (this._bgground || (this._bgground={}),this._bgground.color=value);
+		this._ower.conchModel && this._ower.conchModel.bgColor(value);
+		this._ower._renderType |=0x100;
+	});
+
+	/**
+	*行间距。
+	*/
+	__getset(0,__proto,'leading',function(){
+		return this._spacing[1];
+		},function(d){
+		((typeof d=='string'))&& (d=parseInt(d+""));
+		this._spacing===CSSStyle._SPACING && (this._spacing=[0,0]);
+		this._spacing[1]=d;
+	});
+
+	/**
+	*字体信息。
+	*/
+	__getset(0,__proto,'font',function(){
+		return this._font.toString();
+		},function(value){
+		this._createFont().set(value);
+	});
+
+	/**
+	*<p>指定文本字段是否是密码文本字段。</p>
+	*如果此属性的值为 true，则文本字段被视为密码文本字段，并使用星号而不是实际字符来隐藏输入的字符。如果为 false，则不会将文本字段视为密码文本字段。
+	*/
+	__getset(0,__proto,'password',function(){
+		return this._font.password;
+		},function(value){
+		this._createFont().password=value;
+	});
+
+	/**
+	*边距信息。
+	*/
+	__getset(0,__proto,'padding',function(){
+		return this._padding;
+		},function(value){
+		this._padding=value;
+	});
+
+	/**
+	*表示是否加粗。
+	*/
+	__getset(0,__proto,'bold',function(){
+		return this._font.bold;
+		},function(value){
+		this._createFont().bold=value;
+	});
+
+	/**@inheritDoc */
+	__getset(0,__proto,'paddingTop',function(){
+		return this.padding[0];
+	});
+
+	/**
+	*高度。
+	*/
+	__getset(0,__proto,'height',null,function(h){
+		this._type |=0x2000;
+		if ((typeof h=='string')){
+			if (this._calculation("height",h))return;
+			h=parseInt(h);
+		}
+		this.size(-1,h);
+	});
+
+	/**
+	*表示是否换行。
+	*/
+	__getset(0,__proto,'wordWrap',function(){
+		return (this._type & 0x20000)===0;
+		},function(value){
+		value ? (this._type &=~0x20000):(this._type |=0x20000);
+	});
+
+	/**
+	*是否是行元素。
+	*/
+	__getset(0,__proto,'lineElement',function(){
+		return (this._type & 0x10000)!=0;
+		},function(value){
+		value ? (this._type |=0x10000):(this._type &=(~0x10000));
+	});
+
+	/**
+	*表示是否为斜体。
+	*/
+	__getset(0,__proto,'italic',function(){
+		return this._font.italic;
+		},function(value){
+		this._createFont().italic=value;
+	});
+
+	__getset(0,__proto,'_scale',null,function(value){
+		this._ower.scale(value[0],value[1]);
+	});
+
+	/**
+	*表示上边距。
+	*/
+	__getset(0,__proto,'top',null,function(value){
+		var ower=this._ower;
+		if (((typeof value=='string'))){
+			if (value==="middle")
+				value="50% -50% 0";
+			else if (value==="bottom")
+			value="100% -100% 0";
+			if (this._calculation("top",value))return;
+			value=parseInt(value);
+		}
+		ower.y=value;
+	});
+
+	/**
+	*表示左边距。
+	*/
+	__getset(0,__proto,'left',null,function(value){
+		var ower=this._ower;
+		if (((typeof value=='string'))){
+			if (value==="center")
+				value="50% -50% 0";
+			else if (value==="right")
+			value="100% -100% 0";
+			if (this._calculation("left",value))return;
+			value=parseInt(value);
+		}
+		ower.x=value;
+	});
+
+	/**
+	*是否显示为块级元素。
+	*/
+	__getset(0,__proto,'block',_super.prototype._$get_block,function(value){
+		value ? (this._type |=0x1):(this._type &=(~0x1));
+	});
+
+	/**
 	*元素的定位类型。
 	*/
 	__getset(0,__proto,'position',function(){
@@ -18507,38 +18614,49 @@ var CSSStyle=(function(_super){
 	});
 
 	/**
-	*规定元素应该生成的框的类型。
+	*浮动方向。
 	*/
-	__getset(0,__proto,'display',null,function(value){
-		switch (value){
-			case '':
-				this._type &=~0x2;
-				this.visible=true;
-				break ;
-			case 'none':
-				this._type |=0x2;
-				this.visible=false;
-				this._ower._layoutLater();
-				break ;
+	__getset(0,__proto,'cssFloat',function(){
+		return (this._type & 0x8000)!=0 ? "right" :"left";
+		},function(value){
+		this.lineElement=false;
+		value==="right" ? (this._type |=0x8000):(this._type &=(~0x8000));
+	});
+
+	/**
+	*字体大小。
+	*/
+	__getset(0,__proto,'fontSize',function(){
+		return this._font.size;
+		},function(value){
+		this._createFont().size=value;
+	});
+
+	/**
+	*水平对齐方式。
+	*/
+	__getset(0,__proto,'align',function(){
+		return CSSStyle._aligndef[this._aligns[0]];
+		},function(value){
+		this._aligns===CSSStyle._ALIGNS && (this._aligns=[0,0,0]);
+		this._aligns[0]=CSSStyle._aligndef[value];
+	});
+
+	/**
+	*宽度。
+	*/
+	__getset(0,__proto,'width',null,function(w){
+		this._type |=0x8;
+		if ((typeof w=='string')){
+			var offset=w.indexOf('auto');
+			if (offset >=0){
+				this._type |=0x40000;
+				w=w.substr(0,offset);
 			}
-	});
-
-	/**@inheritDoc */
-	__getset(0,__proto,'paddingLeft',function(){
-		return this.padding[3];
-	});
-
-	/**@inheritDoc */
-	__getset(0,__proto,'paddingTop',function(){
-		return this.padding[0];
-	});
-
-	__getset(0,__proto,'_scale',null,function(value){
-		this._ower.scale(value[0],value[1]);
-	});
-
-	__getset(0,__proto,'_rotate',null,function(value){
-		this._ower.rotation=value;
+			if (this._calculation("width",w))return;
+			w=parseInt(w);
+		}
+		this.size(w,-1);
 	});
 
 	CSSStyle.parseOneCSS=function(text,clipWord){
@@ -18673,13 +18791,13 @@ var ColorFilter=(function(_super){
 	}
 
 	/**@private */
-	__getset(0,__proto,'type',function(){
-		return 0x20;
+	__getset(0,__proto,'action',function(){
+		return this._action;
 	});
 
 	/**@private */
-	__getset(0,__proto,'action',function(){
-		return this._action;
+	__getset(0,__proto,'type',function(){
+		return 0x20;
 	});
 
 	return ColorFilter;
@@ -20161,10 +20279,10 @@ var WebGLContext2D=(function(_super){
 		n==null || (this._nBlendType===n)|| (SaveBase.save(this,0x10000,this,true),this._curSubmit=Submit.RENDERBASE,this._renderKey=0,this._nBlendType=n);
 	});
 
-	__getset(0,__proto,'strokeStyle',function(){
-		return this._shader2D.strokeStyle;
+	__getset(0,__proto,'textAlign',function(){
+		return this._other.textAlign;
 		},function(value){
-		this._shader2D.strokeStyle.equal(value)|| (SaveBase.save(this,0x200,this._shader2D,false),this._shader2D.strokeStyle=DrawStyle.create(value));
+		(this._other.textAlign===value)|| (this._other=this._other.make(),SaveBase.save(this,0x8000,this._other,false),this._other.textAlign=value);
 	});
 
 	__getset(0,__proto,'globalAlpha',function(){
@@ -20177,34 +20295,10 @@ var WebGLContext2D=(function(_super){
 		}
 	});
 
-	__getset(0,__proto,'asBitmap',null,function(value){
-		if (value){
-			this._targets || (this._targets=new RenderTargetMAX());
-			this._targets.repaint=true;
-			if (!this._width || !this._height)
-				throw Error("asBitmap no size!");
-			this._targets.setSP(this.sprite);
-			this._targets.size(this._width,this._height);
-		}else
-		this._targets=null;
-	});
-
-	__getset(0,__proto,'fillStyle',function(){
-		return this._shader2D.fillStyle;
+	__getset(0,__proto,'strokeStyle',function(){
+		return this._shader2D.strokeStyle;
 		},function(value){
-		this._shader2D.fillStyle.equal(value)|| (SaveBase.save(this,0x2,this._shader2D,false),this._shader2D.fillStyle=DrawStyle.create(value));
-	});
-
-	__getset(0,__proto,'textAlign',function(){
-		return this._other.textAlign;
-		},function(value){
-		(this._other.textAlign===value)|| (this._other=this._other.make(),SaveBase.save(this,0x8000,this._other,false),this._other.textAlign=value);
-	});
-
-	__getset(0,__proto,'lineWidth',function(){
-		return this._other.lineWidth;
-		},function(value){
-		(this._other.lineWidth===value)|| (this._other=this._other.make(),SaveBase.save(this,0x100,this._other,false),this._other.lineWidth=value);
+		this._shader2D.strokeStyle.equal(value)|| (SaveBase.save(this,0x200,this._shader2D,false),this._shader2D.strokeStyle=DrawStyle.create(value));
 	});
 
 	__getset(0,__proto,'textBaseline',function(){
@@ -20219,6 +20313,30 @@ var WebGLContext2D=(function(_super){
 		this._other=this._other.make();
 		SaveBase.save(this,0x8,this._other,false);
 		this._other.font===FontInContext.EMPTY ? (this._other.font=new FontInContext(str)):(this._other.font.setFont(str));
+	});
+
+	__getset(0,__proto,'lineWidth',function(){
+		return this._other.lineWidth;
+		},function(value){
+		(this._other.lineWidth===value)|| (this._other=this._other.make(),SaveBase.save(this,0x100,this._other,false),this._other.lineWidth=value);
+	});
+
+	__getset(0,__proto,'fillStyle',function(){
+		return this._shader2D.fillStyle;
+		},function(value){
+		this._shader2D.fillStyle.equal(value)|| (SaveBase.save(this,0x2,this._shader2D,false),this._shader2D.fillStyle=DrawStyle.create(value));
+	});
+
+	__getset(0,__proto,'asBitmap',null,function(value){
+		if (value){
+			this._targets || (this._targets=new RenderTargetMAX());
+			this._targets.repaint=true;
+			if (!this._width || !this._height)
+				throw Error("asBitmap no size!");
+			this._targets.setSP(this.sprite);
+			this._targets.size(this._width,this._height);
+		}else
+		this._targets=null;
 	});
 
 	WebGLContext2D.__init__=function(){
@@ -20506,16 +20624,16 @@ var Atlaser=(function(_super){
 		this._atlasCanvas.destroy();
 	}
 
+	__getset(0,__proto,'inAtlasWebGLImagesKey',function(){
+		return this._InAtlasWebGLImagesKey;
+	});
+
 	__getset(0,__proto,'InAtlasWebGLImagesOffsetValue',function(){
 		return this._InAtlasWebGLImagesOffsetValue;
 	});
 
 	__getset(0,__proto,'texture',function(){
 		return this._atlasCanvas;
-	});
-
-	__getset(0,__proto,'inAtlasWebGLImagesKey',function(){
-		return this._InAtlasWebGLImagesKey;
 	});
 
 	return Atlaser;
@@ -22051,191 +22169,6 @@ var Sprite=(function(_super){
 		this.parent && (this.parent)._layoutLater();
 	}
 
-	/**
-	*<p>指定是否对使用了 scrollRect 的显示对象进行优化处理。默认为false(不优化)。</p>
-	*<p>当值为ture时：将对此对象使用了scrollRect 设定的显示区域以外的显示内容不进行渲染，以提高性能(如果子对象有旋转缩放或者中心点偏移，则显示筛选会不精确)。</p>
-	*/
-	__getset(0,__proto,'optimizeScrollRect',function(){
-		return this._optimizeScrollRect;
-		},function(b){
-		if (this._optimizeScrollRect !=b){
-			this._optimizeScrollRect=b;
-			this.conchModel && this.conchModel.optimizeScrollRect(b);
-		}
-	});
-
-	/**
-	*设置是否开启自定义渲染，只有开启自定义渲染，才能使用customRender函数渲染。
-	*/
-	__getset(0,__proto,'customRenderEnable',null,function(b){
-		if (b){
-			this._renderType |=0x400;
-			if (Render$1.isConchNode){
-				Sprite.CustomList.push(this);
-				var canvas=new HTMLCanvas("2d");
-				canvas._setContext(new CanvasRenderingContext2D());
-				this.customContext=new RenderContext(0,0,canvas);
-				canvas.context.setCanvasType && canvas.context.setCanvasType(2);
-				this.conchModel.custom(canvas.context);
-			}
-		}
-	});
-
-	/**
-	*指定显示对象是否缓存为静态图像。功能同cacheAs的normal模式。建议优先使用cacheAs代替。
-	*/
-	__getset(0,__proto,'cacheAsBitmap',function(){
-		return this.cacheAs!=="none";
-		},function(value){
-		this.cacheAs=value ? (this._$P["hasFilter"] ? "none" :"normal"):"none";
-	});
-
-	/**
-	*<p>指定显示对象是否缓存为静态图像，cacheAs时，子对象发生变化，会自动重新缓存，同时也可以手动调用reCache方法更新缓存。</p>
-	*<p>建议把不经常变化的“复杂内容”缓存为静态图像，能极大提高渲染性能。cacheAs有"none"，"normal"和"bitmap"三个值可选。
-	*<li>默认为"none"，不做任何缓存。</li>
-	*<li>当值为"normal"时，canvas模式下进行画布缓存，webgl模式下进行命令缓存。</li>
-	*<li>当值为"bitmap"时，canvas模式下进行依然是画布缓存，webgl模式下使用renderTarget缓存。</li></p>
-	*<p>webgl下renderTarget缓存模式缺点：会额外创建renderTarget对象，增加内存开销，缓存面积有最大2048限制，不断重绘时会增加CPU开销。优点：大幅减少drawcall，渲染性能最高。
-	*webgl下命令缓存模式缺点：只会减少节点遍历及命令组织，不会减少drawcall数，性能中等。优点：没有额外内存开销，无需renderTarget支持。</p>
-	*/
-	__getset(0,__proto,'cacheAs',function(){
-		return this._$P.cacheCanvas==null ? "none" :this._$P.cacheCanvas.type;
-		},function(value){
-		var cacheCanvas=this._$P.cacheCanvas;
-		if (value===(cacheCanvas ? cacheCanvas.type :"none"))return;
-		if (value!=="none"){
-			if (!this._getBit(0x1))this._setUpNoticeType(0x1);
-			cacheCanvas || (cacheCanvas=this._set$P("cacheCanvas",Pool.getItemByClass("cacheCanvas",Object)));
-			cacheCanvas.type=value;
-			cacheCanvas.reCache=true;
-			this._renderType |=0x10;
-			if (value=="bitmap")this.conchModel && this.conchModel.cacheAs(1);
-			this._set$P("cacheForFilters",false);
-			}else {
-			if (this._$P["hasFilter"]){
-				this._set$P("cacheForFilters",true);
-				}else {
-				if (cacheCanvas){
-					var cc=cacheCanvas;
-					if (cc && cc.ctx){
-						Pool.recover("RenderContext",cc.ctx);
-						cc.ctx.canvas.size(0,0);
-						cc.ctx=null;
-					}
-					Pool.recover("cacheCanvas",cacheCanvas);
-				}
-				this._$P.cacheCanvas=null;
-				this._renderType &=~0x10;
-				this.conchModel && this.conchModel.cacheAs(0);
-			}
-		}
-		this.repaint();
-	});
-
-	/**z排序，更改此值，则会按照值的大小对同一容器的所有对象重新排序。值越大，越靠上。默认为0，则根据添加顺序排序。*/
-	__getset(0,__proto,'zOrder',function(){
-		return this._zOrder;
-		},function(value){
-		if (this._zOrder !=value){
-			this._zOrder=value;
-			this.conchModel && this.conchModel.setZOrder && this.conchModel.setZOrder(value);
-			if (this._parent){
-				value && this._parent._set$P("hasZorder",true);
-				Laya.timer.callLater(this._parent,this.updateZOrder);
-			}
-		}
-	});
-
-	/**旋转角度，默认值为0。以角度为单位。*/
-	__getset(0,__proto,'rotation',function(){
-		return this._style._tf.rotate;
-		},function(value){
-		var style=this.getStyle();
-		if (style._tf.rotate!==value){
-			style.setRotate(value);
-			this._tfChanged=true;
-			this.conchModel && this.conchModel.rotate(value);
-			this._renderType |=0x04;
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-		}
-	});
-
-	/**
-	*<p>显示对象的宽度，单位为像素，默认为0。</p>
-	*<p>此宽度用于鼠标碰撞检测，并不影响显示对象图像大小。需要对显示对象的图像进行缩放，请使用scale、scaleX、scaleY。</p>
-	*<p>可以通过getbounds获取显示对象图像的实际宽度。</p>
-	*/
-	__getset(0,__proto,'width',function(){
-		if (!this.autoSize)return this._width;
-		return this.getSelfBounds().width;
-		},function(value){
-		if (this._width!==value){
-			this._width=value;
-			this.conchModel && this.conchModel.size(value,this._height)
-			this.repaint();
-		}
-	});
-
-	/**表示显示对象相对于父容器的水平方向坐标值。*/
-	__getset(0,__proto,'x',function(){
-		return this._x;
-		},function(value){
-		if (this._x!==value){
-			if (this.destroyed)return;
-			this._x=value;
-			this.conchModel && this.conchModel.pos(value,this._y);
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-			if (this._$P.maskParent && this._$P.maskParent._repaint===0){
-				this._$P.maskParent._repaint=1;
-				this._$P.maskParent.parentRepaint();
-			}
-		}
-	});
-
-	/**
-	*获得相对于stage的全局Y轴缩放值（会叠加父亲节点的缩放值）。
-	*/
-	__getset(0,__proto,'globalScaleY',function(){
-		var scale=1;
-		var ele=this;
-		while (ele){
-			if (ele===Laya.stage)break ;
-			scale *=ele.scaleY;
-			ele=ele.parent;
-		}
-		return scale;
-	});
-
-	/**
-	*<p>可以设置一个Rectangle区域作为点击区域，或者设置一个<code>HitArea</code>实例作为点击区域，HitArea内可以设置可点击和不可点击区域。</p>
-	*<p>如果不设置hitArea，则根据宽高形成的区域进行碰撞。</p>
-	*/
-	__getset(0,__proto,'hitArea',function(){
-		return this._$P.hitArea;
-		},function(value){
-		this._set$P("hitArea",value);
-	});
-
-	/**
-	*是否静态缓存此对象的当前帧的最终属性。为 true 时，子对象变化时不会自动更新缓存，但是可以通过调用 reCache 方法手动刷新。
-	*<b>注意：</b> 1. 设置 cacheAs 为非空和非"none"时才有效。 2. 由于渲染的时机在脚本执行之后，也就是说当前帧渲染的是对象的最终属性，所以如果在当前帧渲染之前、设置静态缓存之后改变对象属性，则最终渲染结果表现的是对象的最终属性。
-	*/
-	__getset(0,__proto,'staticCache',function(){
-		return this._$P.staticCache;
-		},function(value){
-		this._set$P("staticCache",value);
-		if (!value)this.reCache();
-	});
-
 	/**设置一个Texture实例，并显示此图片（如果之前有其他绘制，则会被清除掉）。等同于graphics.clear();graphics.drawTexture()*/
 	__getset(0,__proto,'texture',function(){
 		return this._texture;
@@ -22246,219 +22179,67 @@ var Sprite=(function(_super){
 		}
 	});
 
-	/**表示显示对象相对于父容器的垂直方向坐标值。*/
-	__getset(0,__proto,'y',function(){
-		return this._y;
-		},function(value){
-		if (this._y!==value){
-			if (this.destroyed)return;
-			this._y=value;
-			this.conchModel && this.conchModel.pos(this._x,value);
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-			if (this._$P.maskParent && this._$P.maskParent._repaint===0){
-				this._$P.maskParent._repaint=1;
-				this._$P.maskParent.parentRepaint();
-			}
-		}
+	/**
+	*返回鼠标在此对象坐标系上的 Y 轴坐标信息。
+	*/
+	__getset(0,__proto,'mouseY',function(){
+		return this.getMousePoint().y;
 	});
 
 	/**
-	*<p>显示对象的高度，单位为像素，默认为0。</p>
-	*<p>此高度用于鼠标碰撞检测，并不影响显示对象图像大小。需要对显示对象的图像进行缩放，请使用scale、scaleX、scaleY。</p>
-	*<p>可以通过getbounds获取显示对象图像的实际高度。</p>
+	*获得相对于stage的全局X轴缩放值（会叠加父亲节点的缩放值）。
 	*/
-	__getset(0,__proto,'height',function(){
-		if (!this.autoSize)return this._height;
-		return this.getSelfBounds().height;
-		},function(value){
-		if (this._height!==value){
-			this._height=value;
-			this.conchModel && this.conchModel.size(this._width,value);
-			this.repaint();
+	__getset(0,__proto,'globalScaleX',function(){
+		var scale=1;
+		var ele=this;
+		while (ele){
+			if (ele===Laya.stage)break ;
+			scale *=ele.scaleX;
+			ele=ele.parent;
 		}
-	});
-
-	/**指定要使用的混合模式。目前只支持"lighter"。*/
-	__getset(0,__proto,'blendMode',function(){
-		return this._style.blendMode;
-		},function(value){
-		this.getStyle().blendMode=value;
-		this.conchModel && this.conchModel.blendMode(value);
-		if (value && value !="source-over")this._renderType |=0x08;
-		else this._renderType &=~0x08;
-		this.parentRepaint();
-	});
-
-	/**X轴缩放值，默认值为1。设置为负数，可以实现水平反转效果，比如scaleX=-1。*/
-	__getset(0,__proto,'scaleX',function(){
-		return this._style._tf.scaleX;
-		},function(value){
-		var style=this.getStyle();
-		if (style._tf.scaleX!==value){
-			style.setScaleX(value);
-			this._tfChanged=true;
-			this.conchModel && this.conchModel.scale(value,style._tf.scaleY);
-			this._renderType |=0x04;
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-		}
-	});
-
-	/**Y轴缩放值，默认值为1。设置为负数，可以实现垂直反转效果，比如scaleX=-1。*/
-	__getset(0,__proto,'scaleY',function(){
-		return this._style._tf.scaleY;
-		},function(value){
-		var style=this.getStyle();
-		if (style._tf.scaleY!==value){
-			style.setScaleY(value);
-			this._tfChanged=true;
-			this.conchModel && this.conchModel.scale(style._tf.scaleX,value);
-			this._renderType |=0x04;
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-		}
-	});
-
-	/**对舞台 <code>stage</code> 的引用。*/
-	__getset(0,__proto,'stage',function(){
-		return Laya.stage;
-	});
-
-	/**水平倾斜角度，默认值为0。以角度为单位。*/
-	__getset(0,__proto,'skewX',function(){
-		return this._style._tf.skewX;
-		},function(value){
-		var style=this.getStyle();
-		if (style._tf.skewX!==value){
-			style.setSkewX(value);
-			this._tfChanged=true;
-			this.conchModel && this.conchModel.skew(value,style._tf.skewY);
-			this._renderType |=0x04;
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-		}
+		return scale;
 	});
 
 	/**
-	*<p>显示对象的滚动矩形范围，具有裁剪效果(如果只想限制子对象渲染区域，请使用viewport)，设置optimizeScrollRect=true，可以优化裁剪区域外的内容不进行渲染。</p>
-	*<p> srollRect和viewport的区别：<br/>
-	*1.srollRect自带裁剪效果，viewport只影响子对象渲染是否渲染，不具有裁剪效果（性能更高）。<br/>
-	*2.设置rect的x,y属性均能实现区域滚动效果，但scrollRect会保持0,0点位置不变。</p>
-	*/
-	__getset(0,__proto,'scrollRect',function(){
-		return this._style.scrollRect;
+	*是否接受鼠标事件。
+	*默认为false，如果监听鼠标事件，则会自动设置本对象及父节点的属性 mouseEnable 的值都为 true（如果父节点手动设置为false，则不会更改）。
+	**/
+	__getset(0,__proto,'mouseEnabled',function(){
+		return this._mouseEnableState > 1;
 		},function(value){
-		this.getStyle().scrollRect=value;
-		this.repaint();
+		this._mouseEnableState=value ? 2 :1;
+	});
+
+	/**
+	*<p>遮罩，可以设置一个对象(支持位图和矢量图)，根据对象形状进行遮罩显示。</p>
+	*<p>【注意】遮罩对象坐标系是相对遮罩对象本身的，和Flash机制不同</p>
+	*/
+	__getset(0,__proto,'mask',function(){
+		return this._$P._mask;
+		},function(value){
+		if (value && this.mask && this.mask._$P.maskParent)return;
 		if (value){
-			this._renderType |=0x80;
-			this.conchModel && this.conchModel.scrollRect(value.x,value.y,value.width,value.height);
+			this.cacheAs="bitmap";
+			this._set$P("_mask",value);
+			value._set$P("maskParent",this);
 			}else {
-			this._renderType &=~0x80;
-			if (this.conchModel){
-				if (Sprite.RUNTIMEVERION < "0.9.1")
-					this.conchModel.removeType(0x40);
-				else
-				this.conchModel.removeType(0x80);
-			}
+			this.cacheAs="none";
+			this.mask && this.mask._set$P("maskParent",null);
+			this._set$P("_mask",value);
 		}
-	});
-
-	/**垂直倾斜角度，默认值为0。以角度为单位。*/
-	__getset(0,__proto,'skewY',function(){
-		return this._style._tf.skewY;
-		},function(value){
-		var style=this.getStyle();
-		if (style._tf.skewY!==value){
-			style.setSkewY(value);
-			this._tfChanged=true;
-			this.conchModel && this.conchModel.skew(style._tf.skewX,value);
-			this._renderType |=0x04;
-			var p=this._parent;
-			if (p && p._repaint===0){
-				p._repaint=1;
-				p.parentRepaint();
-			}
-		}
-	});
-
-	/**
-	*<p>对象的矩阵信息。通过设置矩阵可以实现节点旋转，缩放，位移效果。</p>
-	*<p>矩阵更多信息请参考 <code>Matrix</code></p>
-	*/
-	__getset(0,__proto,'transform',function(){
-		return this._tfChanged ? this._adjustTransform():this._transform;
-		},function(value){
-		this._tfChanged=false;
-		this._transform=value;
-		if (value){
-			this._x=value.tx;
-			this._y=value.ty;
-			value.tx=value.ty=0;
-			this.conchModel && this.conchModel.transform(value.a,value.b,value.c,value.d,this._x,this._y);
-		}
-		if (value)this._renderType |=0x04;
-		else {
-			this._renderType &=~0x04;
-			this.conchModel && this.conchModel.removeType(0x04);
-		}
+		this.conchModel && this.conchModel.mask(value ? value.conchModel :null);
+		this._renderType |=0x40;
 		this.parentRepaint();
 	});
 
-	/**X轴 轴心点的位置，单位为像素，默认为0。轴心点会影响对象位置，缩放中心，旋转中心。*/
-	__getset(0,__proto,'pivotX',function(){
-		return this._style._tf.translateX;
+	/**
+	*<p>可以设置一个Rectangle区域作为点击区域，或者设置一个<code>HitArea</code>实例作为点击区域，HitArea内可以设置可点击和不可点击区域。</p>
+	*<p>如果不设置hitArea，则根据宽高形成的区域进行碰撞。</p>
+	*/
+	__getset(0,__proto,'hitArea',function(){
+		return this._$P.hitArea;
 		},function(value){
-		this.getStyle().setTranslateX(value);
-		this.conchModel && this.conchModel.pivot(value,this._style._tf.translateY);
-		this.repaint();
-	});
-
-	/**Y轴 轴心点的位置，单位为像素，默认为0。轴心点会影响对象位置，缩放中心，旋转中心。*/
-	__getset(0,__proto,'pivotY',function(){
-		return this._style._tf.translateY;
-		},function(value){
-		this.getStyle().setTranslateY(value);
-		this.conchModel && this.conchModel.pivot(this._style._tf.translateX,value);
-		this.repaint();
-	});
-
-	/**透明度，值为0-1，默认值为1，表示不透明。更改alpha值会影响drawcall。*/
-	__getset(0,__proto,'alpha',function(){
-		return this._style.alpha;
-		},function(value){
-		if (this._style && this._style.alpha!==value){
-			value=value < 0 ? 0 :(value > 1 ? 1 :value);
-			this.getStyle().alpha=value;
-			this.conchModel && this.conchModel.alpha(value);
-			if (value!==1)this._renderType |=0x02;
-			else this._renderType &=~0x02;
-			this.parentRepaint();
-		}
-	});
-
-	/**表示是否可见，默认为true。如果设置不可见，节点将不被渲染。*/
-	__getset(0,__proto,'visible',function(){
-		return this._style.visible;
-		},function(value){
-		if (this._style && this._style.visible!==value){
-			this.getStyle().visible=value;
-			this.conchModel && this.conchModel.visible(value);
-			this.parentRepaint();
-		}
+		this._set$P("hitArea",value);
 	});
 
 	/**绘图对象。封装了绘制位图和矢量图的接口，Sprite所有的绘图操作都通过Graphics来实现的。*/
@@ -22528,57 +22309,219 @@ var Sprite=(function(_super){
 		this.repaint();
 	});
 
-	__getset(0,__proto,'parent',_super.prototype._$get_parent,function(value){
-		Laya.superSet(Node,this,'parent',value);
-		if (value && this._getBit(0x2)){
-			this._$2__onDisplay();
-		}
-	});
-
 	/**
-	*<p>遮罩，可以设置一个对象(支持位图和矢量图)，根据对象形状进行遮罩显示。</p>
-	*<p>【注意】遮罩对象坐标系是相对遮罩对象本身的，和Flash机制不同</p>
+	*获得相对于stage的全局Y轴缩放值（会叠加父亲节点的缩放值）。
 	*/
-	__getset(0,__proto,'mask',function(){
-		return this._$P._mask;
-		},function(value){
-		if (value && this.mask && this.mask._$P.maskParent)return;
-		if (value){
-			this.cacheAs="bitmap";
-			this._set$P("_mask",value);
-			value._set$P("maskParent",this);
-			}else {
-			this.cacheAs="none";
-			this.mask && this.mask._set$P("maskParent",null);
-			this._set$P("_mask",value);
-		}
-		this.conchModel && this.conchModel.mask(value ? value.conchModel :null);
-		this._renderType |=0x40;
-		this.parentRepaint();
-	});
-
-	/**
-	*是否接受鼠标事件。
-	*默认为false，如果监听鼠标事件，则会自动设置本对象及父节点的属性 mouseEnable 的值都为 true（如果父节点手动设置为false，则不会更改）。
-	**/
-	__getset(0,__proto,'mouseEnabled',function(){
-		return this._mouseEnableState > 1;
-		},function(value){
-		this._mouseEnableState=value ? 2 :1;
-	});
-
-	/**
-	*获得相对于stage的全局X轴缩放值（会叠加父亲节点的缩放值）。
-	*/
-	__getset(0,__proto,'globalScaleX',function(){
+	__getset(0,__proto,'globalScaleY',function(){
 		var scale=1;
 		var ele=this;
 		while (ele){
 			if (ele===Laya.stage)break ;
-			scale *=ele.scaleX;
+			scale *=ele.scaleY;
 			ele=ele.parent;
 		}
 		return scale;
+	});
+
+	/**透明度，值为0-1，默认值为1，表示不透明。更改alpha值会影响drawcall。*/
+	__getset(0,__proto,'alpha',function(){
+		return this._style.alpha;
+		},function(value){
+		if (this._style && this._style.alpha!==value){
+			value=value < 0 ? 0 :(value > 1 ? 1 :value);
+			this.getStyle().alpha=value;
+			this.conchModel && this.conchModel.alpha(value);
+			if (value!==1)this._renderType |=0x02;
+			else this._renderType &=~0x02;
+			this.parentRepaint();
+		}
+	});
+
+	/**X轴缩放值，默认值为1。设置为负数，可以实现水平反转效果，比如scaleX=-1。*/
+	__getset(0,__proto,'scaleX',function(){
+		return this._style._tf.scaleX;
+		},function(value){
+		var style=this.getStyle();
+		if (style._tf.scaleX!==value){
+			style.setScaleX(value);
+			this._tfChanged=true;
+			this.conchModel && this.conchModel.scale(value,style._tf.scaleY);
+			this._renderType |=0x04;
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+		}
+	});
+
+	/**垂直倾斜角度，默认值为0。以角度为单位。*/
+	__getset(0,__proto,'skewY',function(){
+		return this._style._tf.skewY;
+		},function(value){
+		var style=this.getStyle();
+		if (style._tf.skewY!==value){
+			style.setSkewY(value);
+			this._tfChanged=true;
+			this.conchModel && this.conchModel.skew(style._tf.skewX,value);
+			this._renderType |=0x04;
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+		}
+	});
+
+	/**表示是否可见，默认为true。如果设置不可见，节点将不被渲染。*/
+	__getset(0,__proto,'visible',function(){
+		return this._style.visible;
+		},function(value){
+		if (this._style && this._style.visible!==value){
+			this.getStyle().visible=value;
+			this.conchModel && this.conchModel.visible(value);
+			this.parentRepaint();
+		}
+	});
+
+	/**Y轴 轴心点的位置，单位为像素，默认为0。轴心点会影响对象位置，缩放中心，旋转中心。*/
+	__getset(0,__proto,'pivotY',function(){
+		return this._style._tf.translateY;
+		},function(value){
+		this.getStyle().setTranslateY(value);
+		this.conchModel && this.conchModel.pivot(this._style._tf.translateX,value);
+		this.repaint();
+	});
+
+	/**表示显示对象相对于父容器的垂直方向坐标值。*/
+	__getset(0,__proto,'y',function(){
+		return this._y;
+		},function(value){
+		if (this._y!==value){
+			if (this.destroyed)return;
+			this._y=value;
+			this.conchModel && this.conchModel.pos(this._x,value);
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+			if (this._$P.maskParent && this._$P.maskParent._repaint===0){
+				this._$P.maskParent._repaint=1;
+				this._$P.maskParent.parentRepaint();
+			}
+		}
+	});
+
+	/**X轴 轴心点的位置，单位为像素，默认为0。轴心点会影响对象位置，缩放中心，旋转中心。*/
+	__getset(0,__proto,'pivotX',function(){
+		return this._style._tf.translateX;
+		},function(value){
+		this.getStyle().setTranslateX(value);
+		this.conchModel && this.conchModel.pivot(value,this._style._tf.translateY);
+		this.repaint();
+	});
+
+	/**水平倾斜角度，默认值为0。以角度为单位。*/
+	__getset(0,__proto,'skewX',function(){
+		return this._style._tf.skewX;
+		},function(value){
+		var style=this.getStyle();
+		if (style._tf.skewX!==value){
+			style.setSkewX(value);
+			this._tfChanged=true;
+			this.conchModel && this.conchModel.skew(value,style._tf.skewY);
+			this._renderType |=0x04;
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+		}
+	});
+
+	/**
+	*<p>显示对象的滚动矩形范围，具有裁剪效果(如果只想限制子对象渲染区域，请使用viewport)，设置optimizeScrollRect=true，可以优化裁剪区域外的内容不进行渲染。</p>
+	*<p> srollRect和viewport的区别：<br/>
+	*1.srollRect自带裁剪效果，viewport只影响子对象渲染是否渲染，不具有裁剪效果（性能更高）。<br/>
+	*2.设置rect的x,y属性均能实现区域滚动效果，但scrollRect会保持0,0点位置不变。</p>
+	*/
+	__getset(0,__proto,'scrollRect',function(){
+		return this._style.scrollRect;
+		},function(value){
+		this.getStyle().scrollRect=value;
+		this.repaint();
+		if (value){
+			this._renderType |=0x80;
+			this.conchModel && this.conchModel.scrollRect(value.x,value.y,value.width,value.height);
+			}else {
+			this._renderType &=~0x80;
+			if (this.conchModel){
+				if (Sprite.RUNTIMEVERION < "0.9.1")
+					this.conchModel.removeType(0x40);
+				else
+				this.conchModel.removeType(0x80);
+			}
+		}
+	});
+
+	/**旋转角度，默认值为0。以角度为单位。*/
+	__getset(0,__proto,'rotation',function(){
+		return this._style._tf.rotate;
+		},function(value){
+		var style=this.getStyle();
+		if (style._tf.rotate!==value){
+			style.setRotate(value);
+			this._tfChanged=true;
+			this.conchModel && this.conchModel.rotate(value);
+			this._renderType |=0x04;
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+		}
+	});
+
+	/**
+	*<p>对象的矩阵信息。通过设置矩阵可以实现节点旋转，缩放，位移效果。</p>
+	*<p>矩阵更多信息请参考 <code>Matrix</code></p>
+	*/
+	__getset(0,__proto,'transform',function(){
+		return this._tfChanged ? this._adjustTransform():this._transform;
+		},function(value){
+		this._tfChanged=false;
+		this._transform=value;
+		if (value){
+			this._x=value.tx;
+			this._y=value.ty;
+			value.tx=value.ty=0;
+			this.conchModel && this.conchModel.transform(value.a,value.b,value.c,value.d,this._x,this._y);
+		}
+		if (value)this._renderType |=0x04;
+		else {
+			this._renderType &=~0x04;
+			this.conchModel && this.conchModel.removeType(0x04);
+		}
+		this.parentRepaint();
+	});
+
+	/**Y轴缩放值，默认值为1。设置为负数，可以实现垂直反转效果，比如scaleX=-1。*/
+	__getset(0,__proto,'scaleY',function(){
+		return this._style._tf.scaleY;
+		},function(value){
+		var style=this.getStyle();
+		if (style._tf.scaleY!==value){
+			style.setScaleY(value);
+			this._tfChanged=true;
+			this.conchModel && this.conchModel.scale(style._tf.scaleX,value);
+			this._renderType |=0x04;
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+		}
 	});
 
 	/**
@@ -22589,10 +22532,185 @@ var Sprite=(function(_super){
 	});
 
 	/**
-	*返回鼠标在此对象坐标系上的 Y 轴坐标信息。
+	*<p>显示对象的宽度，单位为像素，默认为0。</p>
+	*<p>此宽度用于鼠标碰撞检测，并不影响显示对象图像大小。需要对显示对象的图像进行缩放，请使用scale、scaleX、scaleY。</p>
+	*<p>可以通过getbounds获取显示对象图像的实际宽度。</p>
 	*/
-	__getset(0,__proto,'mouseY',function(){
-		return this.getMousePoint().y;
+	__getset(0,__proto,'width',function(){
+		if (!this.autoSize)return this._width;
+		return this.getSelfBounds().width;
+		},function(value){
+		if (this._width!==value){
+			this._width=value;
+			this.conchModel && this.conchModel.size(value,this._height)
+			this.repaint();
+		}
+	});
+
+	/**
+	*<p>指定显示对象是否缓存为静态图像，cacheAs时，子对象发生变化，会自动重新缓存，同时也可以手动调用reCache方法更新缓存。</p>
+	*<p>建议把不经常变化的“复杂内容”缓存为静态图像，能极大提高渲染性能。cacheAs有"none"，"normal"和"bitmap"三个值可选。
+	*<li>默认为"none"，不做任何缓存。</li>
+	*<li>当值为"normal"时，canvas模式下进行画布缓存，webgl模式下进行命令缓存。</li>
+	*<li>当值为"bitmap"时，canvas模式下进行依然是画布缓存，webgl模式下使用renderTarget缓存。</li></p>
+	*<p>webgl下renderTarget缓存模式缺点：会额外创建renderTarget对象，增加内存开销，缓存面积有最大2048限制，不断重绘时会增加CPU开销。优点：大幅减少drawcall，渲染性能最高。
+	*webgl下命令缓存模式缺点：只会减少节点遍历及命令组织，不会减少drawcall数，性能中等。优点：没有额外内存开销，无需renderTarget支持。</p>
+	*/
+	__getset(0,__proto,'cacheAs',function(){
+		return this._$P.cacheCanvas==null ? "none" :this._$P.cacheCanvas.type;
+		},function(value){
+		var cacheCanvas=this._$P.cacheCanvas;
+		if (value===(cacheCanvas ? cacheCanvas.type :"none"))return;
+		if (value!=="none"){
+			if (!this._getBit(0x1))this._setUpNoticeType(0x1);
+			cacheCanvas || (cacheCanvas=this._set$P("cacheCanvas",Pool.getItemByClass("cacheCanvas",Object)));
+			cacheCanvas.type=value;
+			cacheCanvas.reCache=true;
+			this._renderType |=0x10;
+			if (value=="bitmap")this.conchModel && this.conchModel.cacheAs(1);
+			this._set$P("cacheForFilters",false);
+			}else {
+			if (this._$P["hasFilter"]){
+				this._set$P("cacheForFilters",true);
+				}else {
+				if (cacheCanvas){
+					var cc=cacheCanvas;
+					if (cc && cc.ctx){
+						Pool.recover("RenderContext",cc.ctx);
+						cc.ctx.canvas.size(0,0);
+						cc.ctx=null;
+					}
+					Pool.recover("cacheCanvas",cacheCanvas);
+				}
+				this._$P.cacheCanvas=null;
+				this._renderType &=~0x10;
+				this.conchModel && this.conchModel.cacheAs(0);
+			}
+		}
+		this.repaint();
+	});
+
+	/**
+	*是否静态缓存此对象的当前帧的最终属性。为 true 时，子对象变化时不会自动更新缓存，但是可以通过调用 reCache 方法手动刷新。
+	*<b>注意：</b> 1. 设置 cacheAs 为非空和非"none"时才有效。 2. 由于渲染的时机在脚本执行之后，也就是说当前帧渲染的是对象的最终属性，所以如果在当前帧渲染之前、设置静态缓存之后改变对象属性，则最终渲染结果表现的是对象的最终属性。
+	*/
+	__getset(0,__proto,'staticCache',function(){
+		return this._$P.staticCache;
+		},function(value){
+		this._set$P("staticCache",value);
+		if (!value)this.reCache();
+	});
+
+	/**z排序，更改此值，则会按照值的大小对同一容器的所有对象重新排序。值越大，越靠上。默认为0，则根据添加顺序排序。*/
+	__getset(0,__proto,'zOrder',function(){
+		return this._zOrder;
+		},function(value){
+		if (this._zOrder !=value){
+			this._zOrder=value;
+			this.conchModel && this.conchModel.setZOrder && this.conchModel.setZOrder(value);
+			if (this._parent){
+				value && this._parent._set$P("hasZorder",true);
+				Laya.timer.callLater(this._parent,this.updateZOrder);
+			}
+		}
+	});
+
+	/**对舞台 <code>stage</code> 的引用。*/
+	__getset(0,__proto,'stage',function(){
+		return Laya.stage;
+	});
+
+	__getset(0,__proto,'parent',_super.prototype._$get_parent,function(value){
+		Laya.superSet(Node,this,'parent',value);
+		if (value && this._getBit(0x2)){
+			this._$2__onDisplay();
+		}
+	});
+
+	/**
+	*设置是否开启自定义渲染，只有开启自定义渲染，才能使用customRender函数渲染。
+	*/
+	__getset(0,__proto,'customRenderEnable',null,function(b){
+		if (b){
+			this._renderType |=0x400;
+			if (Render$1.isConchNode){
+				Sprite.CustomList.push(this);
+				var canvas=new HTMLCanvas("2d");
+				canvas._setContext(new CanvasRenderingContext2D());
+				this.customContext=new RenderContext(0,0,canvas);
+				canvas.context.setCanvasType && canvas.context.setCanvasType(2);
+				this.conchModel.custom(canvas.context);
+			}
+		}
+	});
+
+	/**
+	*<p>显示对象的高度，单位为像素，默认为0。</p>
+	*<p>此高度用于鼠标碰撞检测，并不影响显示对象图像大小。需要对显示对象的图像进行缩放，请使用scale、scaleX、scaleY。</p>
+	*<p>可以通过getbounds获取显示对象图像的实际高度。</p>
+	*/
+	__getset(0,__proto,'height',function(){
+		if (!this.autoSize)return this._height;
+		return this.getSelfBounds().height;
+		},function(value){
+		if (this._height!==value){
+			this._height=value;
+			this.conchModel && this.conchModel.size(this._width,value);
+			this.repaint();
+		}
+	});
+
+	/**
+	*指定显示对象是否缓存为静态图像。功能同cacheAs的normal模式。建议优先使用cacheAs代替。
+	*/
+	__getset(0,__proto,'cacheAsBitmap',function(){
+		return this.cacheAs!=="none";
+		},function(value){
+		this.cacheAs=value ? (this._$P["hasFilter"] ? "none" :"normal"):"none";
+	});
+
+	/**表示显示对象相对于父容器的水平方向坐标值。*/
+	__getset(0,__proto,'x',function(){
+		return this._x;
+		},function(value){
+		if (this._x!==value){
+			if (this.destroyed)return;
+			this._x=value;
+			this.conchModel && this.conchModel.pos(value,this._y);
+			var p=this._parent;
+			if (p && p._repaint===0){
+				p._repaint=1;
+				p.parentRepaint();
+			}
+			if (this._$P.maskParent && this._$P.maskParent._repaint===0){
+				this._$P.maskParent._repaint=1;
+				this._$P.maskParent.parentRepaint();
+			}
+		}
+	});
+
+	/**指定要使用的混合模式。目前只支持"lighter"。*/
+	__getset(0,__proto,'blendMode',function(){
+		return this._style.blendMode;
+		},function(value){
+		this.getStyle().blendMode=value;
+		this.conchModel && this.conchModel.blendMode(value);
+		if (value && value !="source-over")this._renderType |=0x08;
+		else this._renderType &=~0x08;
+		this.parentRepaint();
+	});
+
+	/**
+	*<p>指定是否对使用了 scrollRect 的显示对象进行优化处理。默认为false(不优化)。</p>
+	*<p>当值为ture时：将对此对象使用了scrollRect 设定的显示区域以外的显示内容不进行渲染，以提高性能(如果子对象有旋转缩放或者中心点偏移，则显示筛选会不精确)。</p>
+	*/
+	__getset(0,__proto,'optimizeScrollRect',function(){
+		return this._optimizeScrollRect;
+		},function(b){
+		if (this._optimizeScrollRect !=b){
+			this._optimizeScrollRect=b;
+			this.conchModel && this.conchModel.optimizeScrollRect(b);
+		}
 	});
 
 	Sprite.fromImage=function(url){
@@ -22697,10 +22815,10 @@ var Bitmap=(function(_super){
 	__class(Bitmap,'laya.resource.Bitmap',_super);
 	var __proto=Bitmap.prototype;
 	/***
-	*宽度。
+	*HTML Image 或 HTML Canvas 或 WebGL Texture 。
 	*/
-	__getset(0,__proto,'width',function(){
-		return this._w;
+	__getset(0,__proto,'source',function(){
+		return this._source;
 	});
 
 	/***
@@ -22711,10 +22829,10 @@ var Bitmap=(function(_super){
 	});
 
 	/***
-	*HTML Image 或 HTML Canvas 或 WebGL Texture 。
+	*宽度。
 	*/
-	__getset(0,__proto,'source',function(){
-		return this._source;
+	__getset(0,__proto,'width',function(){
+		return this._w;
 	});
 
 	return Bitmap;
@@ -22832,26 +22950,6 @@ var AudioSoundChannel=(function(_super){
 	}
 
 	/**
-	*当前播放到的位置
-	*@return
-	*
-	*/
-	__getset(0,__proto,'position',function(){
-		if (!this._audio)
-			return 0;
-		return this._audio.currentTime;
-	});
-
-	/**
-	*获取总时间。
-	*/
-	__getset(0,__proto,'duration',function(){
-		if (!this._audio)
-			return 0;
-		return this._audio.duration;
-	});
-
-	/**
 	*设置音量
 	*@param v
 	*
@@ -22867,6 +22965,26 @@ var AudioSoundChannel=(function(_super){
 		},function(v){
 		if (!this._audio)return;
 		this._audio.volume=v;
+	});
+
+	/**
+	*获取总时间。
+	*/
+	__getset(0,__proto,'duration',function(){
+		if (!this._audio)
+			return 0;
+		return this._audio.duration;
+	});
+
+	/**
+	*当前播放到的位置
+	*@return
+	*
+	*/
+	__getset(0,__proto,'position',function(){
+		if (!this._audio)
+			return 0;
+		return this._audio.currentTime;
 	});
 
 	return AudioSoundChannel;
@@ -23025,23 +23143,6 @@ var WebAudioSoundChannel=(function(_super){
 	}
 
 	/**
-	*获取当前播放位置
-	*/
-	__getset(0,__proto,'position',function(){
-		if (this.bufferSource){
-			return (Browser.now()-this._startTime)/ 1000+this.startTime;
-		}
-		return 0;
-	});
-
-	__getset(0,__proto,'duration',function(){
-		if (this.audioBuffer){
-			return this.audioBuffer.duration;
-		}
-		return 0;
-	});
-
-	/**
 	*设置音量
 	*/
 	/**
@@ -23055,6 +23156,23 @@ var WebAudioSoundChannel=(function(_super){
 		}
 		this._volume=v;
 		this.gain.gain.value=v;
+	});
+
+	__getset(0,__proto,'duration',function(){
+		if (this.audioBuffer){
+			return this.audioBuffer.duration;
+		}
+		return 0;
+	});
+
+	/**
+	*获取当前播放位置
+	*/
+	__getset(0,__proto,'position',function(){
+		if (this.bufferSource){
+			return (Browser.now()-this._startTime)/ 1000+this.startTime;
+		}
+		return 0;
 	});
 
 	WebAudioSoundChannel._tryCleanFailed=false;
@@ -23227,24 +23345,19 @@ var RenderTarget2D=(function(_super){
 		})
 	}
 
-	__getset(0,__proto,'surfaceFormat',function(){
-		return this._surfaceFormat;
+	/**返回RenderTarget的Texture*/
+	__getset(0,__proto,'source',function(){
+		if (this._alreadyResolved)
+			return Laya.superGet(Texture,this,'source');
+		return null;
 	});
 
 	__getset(0,__proto,'magFifter',function(){
 		return this._magFifter;
 	});
 
-	__getset(0,__proto,'surfaceType',function(){
-		return this._surfaceType;
-	});
-
 	__getset(0,__proto,'mipMap',function(){
 		return this._mipMap;
-	});
-
-	__getset(0,__proto,'depthStencilFormat',function(){
-		return this._depthStencilFormat;
 	});
 
 	//}
@@ -23252,11 +23365,16 @@ var RenderTarget2D=(function(_super){
 		return this._minFifter;
 	});
 
-	/**返回RenderTarget的Texture*/
-	__getset(0,__proto,'source',function(){
-		if (this._alreadyResolved)
-			return Laya.superGet(Texture,this,'source');
-		return null;
+	__getset(0,__proto,'surfaceType',function(){
+		return this._surfaceType;
+	});
+
+	__getset(0,__proto,'depthStencilFormat',function(){
+		return this._depthStencilFormat;
+	});
+
+	__getset(0,__proto,'surfaceFormat',function(){
+		return this._surfaceFormat;
 	});
 
 	RenderTarget2D.create=function(w,h,surfaceFormat,surfaceType,depthStencilFormat,mipMap,repeat,minFifter,magFifter){
@@ -23970,264 +24088,10 @@ var Text=(function(_super){
 		return point.setTo(this._startX+width-(this._clipPoint ? this._clipPoint.x :0),this._startY+line *(this._charSize.height+this.leading)-(this._clipPoint ? this._clipPoint.y :0));
 	}
 
-	/**
-	*@inheritDoc
-	*/
-	__getset(0,__proto,'width',function(){
-		if (this._width)
-			return this._width;
-		return this.textWidth+this.padding[1]+this.padding[3];
-		},function(value){
-		if (value !=this._width){
-			Laya.superSet(Sprite,this,'width',value);
-			this.isChanged=true;
-		}
-	});
-
-	/**
-	*表示文本的宽度，以像素为单位。
-	*/
-	__getset(0,__proto,'textWidth',function(){
-		this._isChanged && Laya.timer.runCallLater(this,this.typeset);
-		return this._textWidth;
-	});
-
-	/**
-	*@inheritDoc
-	*/
-	__getset(0,__proto,'height',function(){
-		if (this._height)return this._height;
-		return this.textHeight+this.padding[0]+this.padding[2];
-		},function(value){
-		if (value !=this._height){
-			Laya.superSet(Sprite,this,'height',value);
-			this.isChanged=true;
-		}
-	});
-
-	/**
-	*表示文本的高度，以像素为单位。
-	*/
-	__getset(0,__proto,'textHeight',function(){
-		this._isChanged && Laya.timer.runCallLater(this,this.typeset);
-		return this._textHeight;
-	});
-
-	/**
-	*<p>边距信息。</p>
-	*<p>数据格式：[上边距，右边距，下边距，左边距]（边距以像素为单位）。</p>
-	*/
-	__getset(0,__proto,'padding',function(){
-		return this._getCSSStyle().padding;
-		},function(value){
-		this._getCSSStyle().padding=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>指定文本是否为粗体字。</p>
-	*<p>默认值为 false，这意味着不使用粗体字。如果值为 true，则文本为粗体字。</p>
-	*/
-	__getset(0,__proto,'bold',function(){
-		return this._getCSSStyle().bold;
-		},function(value){
-		this._getCSSStyle().bold=value;
-		this.isChanged=true;
-	});
-
-	/**当前文本的内容字符串。*/
-	__getset(0,__proto,'text',function(){
-		return this._text || "";
-		},function(value){
-		if (this._text!==value){
-			this.lang(value+"");
-			this.isChanged=true;
-			this.event("change");
-		}
-	});
-
-	/**
-	*<p>表示文本的颜色值。可以通过 <code>Text.defaultColor</code> 设置默认颜色。</p>
-	*<p>默认值为黑色。</p>
-	*/
-	__getset(0,__proto,'color',function(){
-		return this._getCSSStyle().color;
-		},function(value){
-		if (this._getCSSStyle().color !=value){
-			this._getCSSStyle().color=value;
-			if (!this._isChanged && this._graphics){
-				this._graphics.replaceTextColor(this.color)
-				}else {
-				this.isChanged=true;
-			}
-		}
-	});
-
-	/**
-	*<p>文本的字体名称，以字符串形式表示。</p>
-	*<p>默认值为："Arial"，可以通过Font.defaultFont设置默认字体。</p>
-	*<p>如果运行时系统找不到设定的字体，则用系统默认的字体渲染文字，从而导致显示异常。(通常电脑上显示正常，在一些移动端因缺少设置的字体而显示异常)。</p>
-	*@see laya.display.css.Font#defaultFamily
-	*/
-	__getset(0,__proto,'font',function(){
-		return this._getCSSStyle().fontFamily;
-		},function(value){
-		if (this._currBitmapFont){
-			this._currBitmapFont=null;
-			this.scale(1,1);
-		}
-		if (Text._bitmapFonts && Text._bitmapFonts[value]){
-			this._currBitmapFont=Text._bitmapFonts[value];
-		}
-		this._getCSSStyle().fontFamily=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>指定文本的字体大小（以像素为单位）。</p>
-	*<p>默认为20像素，可以通过 <code>Text.defaultSize</code> 设置默认大小。</p>
-	*/
-	__getset(0,__proto,'fontSize',function(){
-		return this._getCSSStyle().fontSize;
-		},function(value){
-		this._getCSSStyle().fontSize=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>表示使用此文本格式的文本是否为斜体。</p>
-	*<p>默认值为 false，这意味着不使用斜体。如果值为 true，则文本为斜体。</p>
-	*/
-	__getset(0,__proto,'italic',function(){
-		return this._getCSSStyle().italic;
-		},function(value){
-		this._getCSSStyle().italic=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>表示文本的水平显示方式。</p>
-	*<p><b>取值：</b>
-	*<li>"left"： 居左对齐显示。</li>
-	*<li>"center"： 居中对齐显示。</li>
-	*<li>"right"： 居右对齐显示。</li>
-	*</p>
-	*/
-	__getset(0,__proto,'align',function(){
-		return this._getCSSStyle().align;
-		},function(value){
-		this._getCSSStyle().align=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>表示文本的垂直显示方式。</p>
-	*<p><b>取值：</b>
-	*<li>"top"： 居顶部对齐显示。</li>
-	*<li>"middle"： 居中对齐显示。</li>
-	*<li>"bottom"： 居底部对齐显示。</li>
-	*</p>
-	*/
-	__getset(0,__proto,'valign',function(){
-		return this._getCSSStyle().valign;
-		},function(value){
-		this._getCSSStyle().valign=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>表示文本是否自动换行，默认为false。</p>
-	*<p>若值为true，则自动换行；否则不自动换行。</p>
-	*/
-	__getset(0,__proto,'wordWrap',function(){
-		return this._getCSSStyle().wordWrap;
-		},function(value){
-		this._getCSSStyle().wordWrap=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*垂直行间距（以像素为单位）。
-	*/
-	__getset(0,__proto,'leading',function(){
-		return this._getCSSStyle().leading;
-		},function(value){
-		this._getCSSStyle().leading=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*文本背景颜色，以字符串表示。
-	*/
-	__getset(0,__proto,'bgColor',function(){
-		return this._getCSSStyle().backgroundColor;
-		},function(value){
-		this._getCSSStyle().backgroundColor=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*文本边框背景颜色，以字符串表示。
-	*/
-	__getset(0,__proto,'borderColor',function(){
-		return this._getCSSStyle().borderColor;
-		},function(value){
-		this._getCSSStyle().borderColor=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>描边宽度（以像素为单位）。</p>
-	*<p>默认值0，表示不描边。</p>
-	*/
-	__getset(0,__proto,'stroke',function(){
-		return this._getCSSStyle().stroke;
-		},function(value){
-		this._getCSSStyle().stroke=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*<p>描边颜色，以字符串表示。</p>
-	*<p>默认值为 "#000000"（黑色）;</p>
-	*/
-	__getset(0,__proto,'strokeColor',function(){
-		return this._getCSSStyle().strokeColor;
-		},function(value){
-		this._getCSSStyle().strokeColor=value;
-		this.isChanged=true;
-	});
-
-	/**
-	*一个布尔值，表示文本的属性是否有改变。若为true表示有改变。
-	*/
-	__getset(0,__proto,'isChanged',null,function(value){
-		if (this._isChanged!==value){
-			this._isChanged=value;
-			value && Laya.timer.callLater(this,this.typeset);
-		}
-	});
-
-	/**
-	*<p>设置横向滚动量。</p>
-	*<p>即使设置超出滚动范围的值，也会被自动限制在可能的最大值处。</p>
-	*/
-	/**
-	*获取横向滚动量。
-	*/
-	__getset(0,__proto,'scrollX',function(){
-		if (!this._clipPoint)
-			return 0;
-		return this._clipPoint.x;
-		},function(value){
-		if (this.overflow !=Text.SCROLL || (this.textWidth < this._width || !this._clipPoint))
-			return;
-		value=value < this.padding[3] ? this.padding[3] :value;
-		var maxScrollX=this._textWidth-this._width;
-		value=value > maxScrollX ? maxScrollX :value;
-		var visibleLineCount=this._height / (this._charSize.height+this.leading)| 0+1;
-		this._clipPoint.x=value;
-		this.renderText(this._lastVisibleLineIndex,visibleLineCount);
+	__getset(0,__proto,'lines',function(){
+		if (this._isChanged)
+			this.typeset();
+		return this._lines;
 	});
 
 	/**
@@ -24254,10 +24118,226 @@ var Text=(function(_super){
 	});
 
 	/**
+	*<p>设置横向滚动量。</p>
+	*<p>即使设置超出滚动范围的值，也会被自动限制在可能的最大值处。</p>
+	*/
+	/**
+	*获取横向滚动量。
+	*/
+	__getset(0,__proto,'scrollX',function(){
+		if (!this._clipPoint)
+			return 0;
+		return this._clipPoint.x;
+		},function(value){
+		if (this.overflow !=Text.SCROLL || (this.textWidth < this._width || !this._clipPoint))
+			return;
+		value=value < this.padding[3] ? this.padding[3] :value;
+		var maxScrollX=this._textWidth-this._width;
+		value=value > maxScrollX ? maxScrollX :value;
+		var visibleLineCount=this._height / (this._charSize.height+this.leading)| 0+1;
+		this._clipPoint.x=value;
+		this.renderText(this._lastVisibleLineIndex,visibleLineCount);
+	});
+
+	/**
+	*<p>描边宽度（以像素为单位）。</p>
+	*<p>默认值0，表示不描边。</p>
+	*/
+	__getset(0,__proto,'stroke',function(){
+		return this._getCSSStyle().stroke;
+		},function(value){
+		this._getCSSStyle().stroke=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*<p>描边颜色，以字符串表示。</p>
+	*<p>默认值为 "#000000"（黑色）;</p>
+	*/
+	__getset(0,__proto,'strokeColor',function(){
+		return this._getCSSStyle().strokeColor;
+		},function(value){
+		this._getCSSStyle().strokeColor=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*<p>指定文本是否为粗体字。</p>
+	*<p>默认值为 false，这意味着不使用粗体字。如果值为 true，则文本为粗体字。</p>
+	*/
+	__getset(0,__proto,'bold',function(){
+		return this._getCSSStyle().bold;
+		},function(value){
+		this._getCSSStyle().bold=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*<p>边距信息。</p>
+	*<p>数据格式：[上边距，右边距，下边距，左边距]（边距以像素为单位）。</p>
+	*/
+	__getset(0,__proto,'padding',function(){
+		return this._getCSSStyle().padding;
+		},function(value){
+		this._getCSSStyle().padding=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*@inheritDoc
+	*/
+	__getset(0,__proto,'height',function(){
+		if (this._height)return this._height;
+		return this.textHeight+this.padding[0]+this.padding[2];
+		},function(value){
+		if (value !=this._height){
+			Laya.superSet(Sprite,this,'height',value);
+			this.isChanged=true;
+		}
+	});
+
+	/**
+	*<p>表示文本是否自动换行，默认为false。</p>
+	*<p>若值为true，则自动换行；否则不自动换行。</p>
+	*/
+	__getset(0,__proto,'wordWrap',function(){
+		return this._getCSSStyle().wordWrap;
+		},function(value){
+		this._getCSSStyle().wordWrap=value;
+		this.isChanged=true;
+	});
+
+	/**
 	*获取横向可滚动最大值。
 	*/
 	__getset(0,__proto,'maxScrollX',function(){
 		return (this.textWidth < this._width)? 0 :this._textWidth-this._width;
+	});
+
+	/**
+	*一个布尔值，表示文本的属性是否有改变。若为true表示有改变。
+	*/
+	__getset(0,__proto,'isChanged',null,function(value){
+		if (this._isChanged!==value){
+			this._isChanged=value;
+			value && Laya.timer.callLater(this,this.typeset);
+		}
+	});
+
+	/**
+	*文本边框背景颜色，以字符串表示。
+	*/
+	__getset(0,__proto,'borderColor',function(){
+		return this._getCSSStyle().borderColor;
+		},function(value){
+		this._getCSSStyle().borderColor=value;
+		this.isChanged=true;
+	});
+
+	/**当前文本的内容字符串。*/
+	__getset(0,__proto,'text',function(){
+		return this._text || "";
+		},function(value){
+		if (this._text!==value){
+			this.lang(value+"");
+			this.isChanged=true;
+			this.event("change");
+		}
+	});
+
+	/**
+	*<p>表示文本的垂直显示方式。</p>
+	*<p><b>取值：</b>
+	*<li>"top"： 居顶部对齐显示。</li>
+	*<li>"middle"： 居中对齐显示。</li>
+	*<li>"bottom"： 居底部对齐显示。</li>
+	*</p>
+	*/
+	__getset(0,__proto,'valign',function(){
+		return this._getCSSStyle().valign;
+		},function(value){
+		this._getCSSStyle().valign=value;
+		this.isChanged=true;
+	});
+
+	__getset(0,__proto,'underlineColor',function(){
+		return this._underlineColor;
+		},function(value){
+		this._underlineColor=value;
+		this._isChanged=true;
+		this.typeset();
+	});
+
+	/**
+	*<p>表示使用此文本格式的文本是否为斜体。</p>
+	*<p>默认值为 false，这意味着不使用斜体。如果值为 true，则文本为斜体。</p>
+	*/
+	__getset(0,__proto,'italic',function(){
+		return this._getCSSStyle().italic;
+		},function(value){
+		this._getCSSStyle().italic=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*文本背景颜色，以字符串表示。
+	*/
+	__getset(0,__proto,'bgColor',function(){
+		return this._getCSSStyle().backgroundColor;
+		},function(value){
+		this._getCSSStyle().backgroundColor=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*<p>表示文本的颜色值。可以通过 <code>Text.defaultColor</code> 设置默认颜色。</p>
+	*<p>默认值为黑色。</p>
+	*/
+	__getset(0,__proto,'color',function(){
+		return this._getCSSStyle().color;
+		},function(value){
+		if (this._getCSSStyle().color !=value){
+			this._getCSSStyle().color=value;
+			if (!this._isChanged && this._graphics){
+				this._graphics.replaceTextColor(this.color)
+				}else {
+				this.isChanged=true;
+			}
+		}
+	});
+
+	/**
+	*<p>表示文本的水平显示方式。</p>
+	*<p><b>取值：</b>
+	*<li>"left"： 居左对齐显示。</li>
+	*<li>"center"： 居中对齐显示。</li>
+	*<li>"right"： 居右对齐显示。</li>
+	*</p>
+	*/
+	__getset(0,__proto,'align',function(){
+		return this._getCSSStyle().align;
+		},function(value){
+		this._getCSSStyle().align=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*<p>指定文本的字体大小（以像素为单位）。</p>
+	*<p>默认为20像素，可以通过 <code>Text.defaultSize</code> 设置默认大小。</p>
+	*/
+	__getset(0,__proto,'fontSize',function(){
+		return this._getCSSStyle().fontSize;
+		},function(value){
+		this._getCSSStyle().fontSize=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*表示文本的高度，以像素为单位。
+	*/
+	__getset(0,__proto,'textHeight',function(){
+		this._isChanged && Laya.timer.runCallLater(this,this.typeset);
+		return this._textHeight;
 	});
 
 	/**
@@ -24267,18 +24347,56 @@ var Text=(function(_super){
 		return (this.textHeight < this._height)? 0 :this._textHeight-this._height;
 	});
 
-	__getset(0,__proto,'lines',function(){
-		if (this._isChanged)
-			this.typeset();
-		return this._lines;
+	/**
+	*垂直行间距（以像素为单位）。
+	*/
+	__getset(0,__proto,'leading',function(){
+		return this._getCSSStyle().leading;
+		},function(value){
+		this._getCSSStyle().leading=value;
+		this.isChanged=true;
 	});
 
-	__getset(0,__proto,'underlineColor',function(){
-		return this._underlineColor;
+	/**
+	*<p>文本的字体名称，以字符串形式表示。</p>
+	*<p>默认值为："Arial"，可以通过Font.defaultFont设置默认字体。</p>
+	*<p>如果运行时系统找不到设定的字体，则用系统默认的字体渲染文字，从而导致显示异常。(通常电脑上显示正常，在一些移动端因缺少设置的字体而显示异常)。</p>
+	*@see laya.display.css.Font#defaultFamily
+	*/
+	__getset(0,__proto,'font',function(){
+		return this._getCSSStyle().fontFamily;
 		},function(value){
-		this._underlineColor=value;
-		this._isChanged=true;
-		this.typeset();
+		if (this._currBitmapFont){
+			this._currBitmapFont=null;
+			this.scale(1,1);
+		}
+		if (Text._bitmapFonts && Text._bitmapFonts[value]){
+			this._currBitmapFont=Text._bitmapFonts[value];
+		}
+		this._getCSSStyle().fontFamily=value;
+		this.isChanged=true;
+	});
+
+	/**
+	*表示文本的宽度，以像素为单位。
+	*/
+	__getset(0,__proto,'textWidth',function(){
+		this._isChanged && Laya.timer.runCallLater(this,this.typeset);
+		return this._textWidth;
+	});
+
+	/**
+	*@inheritDoc
+	*/
+	__getset(0,__proto,'width',function(){
+		if (this._width)
+			return this._width;
+		return this.textWidth+this.padding[1]+this.padding[3];
+		},function(value){
+		if (value !=this._width){
+			Laya.superSet(Sprite,this,'width',value);
+			this.isChanged=true;
+		}
 	});
 
 	Text.registerBitmapFont=function(name,bitmapFont){
@@ -24734,133 +24852,23 @@ var Stage=(function(_super){
 		}
 	}
 
-	/**当前视窗由缩放模式导致的 X 轴缩放系数。*/
-	__getset(0,__proto,'clientScaleX',function(){
-		return this._transform ? this._transform.getScaleX():1;
-	});
-
-	//[Deprecated]
-	__getset(0,__proto,'desginHeight',function(){
-		console.debug("desginHeight已经弃用，请使用designHeight代替");
-		return this.designHeight;
-	});
-
-	/**帧率类型，支持三种模式：fast-60帧(默认)，slow-30帧，mouse-30帧（鼠标活动后会自动加速到60，鼠标不动2秒后降低为30帧，以节省消耗），sleep-1帧。*/
-	__getset(0,__proto,'frameRate',function(){
-		return this._frameRate;
-		},function(value){
-		this._frameRate=value;
-		if (Render$1.isConchApp){
-			switch (this._frameRate){
-				case "slow":
-					Browser.window.conch && Browser.window.conchConfig.setSlowFrame && Browser.window.conchConfig.setSlowFrame(true);
-					break ;
-				case "fast":
-					Browser.window.conch && Browser.window.conchConfig.setSlowFrame && Browser.window.conchConfig.setSlowFrame(false);
-					break ;
-				case "mouse":
-					Browser.window.conch && Browser.window.conchConfig.setMouseFrame && Browser.window.conchConfig.setMouseFrame(2000);
-					break ;
-				case "sleep":
-					Browser.window.conch && Browser.window.conchConfig.setLimitFPS && Browser.window.conchConfig.setLimitFPS(1);
-					break ;
-				default :
-					throw new Error("Stage:frameRate invalid.");
-					break ;
-				}
-		}
-	});
-
-	/**当前视窗由缩放模式导致的 Y 轴缩放系数。*/
-	__getset(0,__proto,'clientScaleY',function(){
-		return this._transform ? this._transform.getScaleY():1;
-	});
-
-	__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
-		this.designWidth=value;
-		Laya.superSet(Sprite,this,'width',value);
-		Laya.timer.callLater(this,this._changeCanvasSize);
-	});
-
 	/**
-	*<p>水平对齐方式。默认值为"left"。</p>
+	*<p>场景布局类型。</p>
 	*<p><ul>取值范围：
-	*<li>"left" ：居左对齐；</li>
-	*<li>"center" ：居中对齐；</li>
-	*<li>"right" ：居右对齐；</li>
+	*<li>"none" ：不更改屏幕</li>
+	*<li>"horizontal" ：自动横屏</li>
+	*<li>"vertical" ：自动竖屏</li>
 	*</ul></p>
 	*/
-	__getset(0,__proto,'alignH',function(){
-		return this._alignH;
+	__getset(0,__proto,'screenMode',function(){
+		return this._screenMode;
 		},function(value){
-		this._alignH=value;
-		Laya.timer.callLater(this,this._changeCanvasSize);
+		this._screenMode=value;
 	});
 
-	/**
-	*舞台是否获得焦点。
-	*/
-	__getset(0,__proto,'isFocused',function(){
-		return this._isFocused;
-	});
-
-	__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
-		this.designHeight=value;
-		Laya.superSet(Sprite,this,'height',value);
-		Laya.timer.callLater(this,this._changeCanvasSize);
-	});
-
-	__getset(0,__proto,'transform',function(){
-		if (this._tfChanged)this._adjustTransform();
-		return this._transform=this._transform|| Matrix.create();
-	},_super.prototype._$set_transform);
-
-	/**
-	*舞台是否处于可见状态(是否进入后台)。
-	*/
-	__getset(0,__proto,'isVisibility',function(){
-		return this._isVisibility;
-	});
-
-	//[Deprecated]
-	__getset(0,__proto,'desginWidth',function(){
-		console.debug("desginWidth已经弃用，请使用designWidth代替");
-		return this.designWidth;
-	});
-
-	/**
-	*<p>缩放模式。默认值为 "noscale"。</p>
-	*<p><ul>取值范围：
-	*<li>"noscale" ：不缩放；</li>
-	*<li>"exactfit" ：全屏不等比缩放；</li>
-	*<li>"showall" ：最小比例缩放；</li>
-	*<li>"noborder" ：最大比例缩放；</li>
-	*<li>"full" ：不缩放，stage的宽高等于屏幕宽高；</li>
-	*<li>"fixedwidth" ：宽度不变，高度根据屏幕比缩放；</li>
-	*<li>"fixedheight" ：高度不变，宽度根据屏幕比缩放；</li>
-	*<li>"fixedauto" ：根据宽高比，自动选择使用fixedwidth或fixedheight；</li>
-	*</ul></p>
-	*/
-	__getset(0,__proto,'scaleMode',function(){
-		return this._scaleMode;
-		},function(value){
-		this._scaleMode=value;
-		Laya.timer.callLater(this,this._changeCanvasSize);
-	});
-
-	/**
-	*<p>垂直对齐方式。默认值为"top"。</p>
-	*<p><ul>取值范围：
-	*<li>"top" ：居顶部对齐；</li>
-	*<li>"middle" ：居中对齐；</li>
-	*<li>"bottom" ：居底部对齐；</li>
-	*</ul></p>
-	*/
-	__getset(0,__proto,'alignV',function(){
-		return this._alignV;
-		},function(value){
-		this._alignV=value;
-		Laya.timer.callLater(this,this._changeCanvasSize);
+	/**鼠标在 Stage 上的 X 轴坐标。*/
+	__getset(0,__proto,'mouseX',function(){
+		return Math.round(MouseManager.instance.mouseX / this.clientScaleX);
 	});
 
 	/**舞台的背景颜色，默认为黑色，null为透明。*/
@@ -24886,9 +24894,109 @@ var Stage=(function(_super){
 		}
 	});
 
-	/**鼠标在 Stage 上的 X 轴坐标。*/
-	__getset(0,__proto,'mouseX',function(){
-		return Math.round(MouseManager.instance.mouseX / this.clientScaleX);
+	__getset(0,__proto,'visible',_super.prototype._$get_visible,function(value){
+		if (this.visible!==value){
+			Laya.superSet(Sprite,this,'visible',value);
+			var style=Render$1._mainCanvas.source.style;
+			style.visibility=value ? "visible" :"hidden";
+		}
+	});
+
+	/**
+	*<p>水平对齐方式。默认值为"left"。</p>
+	*<p><ul>取值范围：
+	*<li>"left" ：居左对齐；</li>
+	*<li>"center" ：居中对齐；</li>
+	*<li>"right" ：居右对齐；</li>
+	*</ul></p>
+	*/
+	__getset(0,__proto,'alignH',function(){
+		return this._alignH;
+		},function(value){
+		this._alignH=value;
+		Laya.timer.callLater(this,this._changeCanvasSize);
+	});
+
+	/**
+	*<p>垂直对齐方式。默认值为"top"。</p>
+	*<p><ul>取值范围：
+	*<li>"top" ：居顶部对齐；</li>
+	*<li>"middle" ：居中对齐；</li>
+	*<li>"bottom" ：居底部对齐；</li>
+	*</ul></p>
+	*/
+	__getset(0,__proto,'alignV',function(){
+		return this._alignV;
+		},function(value){
+		this._alignV=value;
+		Laya.timer.callLater(this,this._changeCanvasSize);
+	});
+
+	/**
+	*<p>缩放模式。默认值为 "noscale"。</p>
+	*<p><ul>取值范围：
+	*<li>"noscale" ：不缩放；</li>
+	*<li>"exactfit" ：全屏不等比缩放；</li>
+	*<li>"showall" ：最小比例缩放；</li>
+	*<li>"noborder" ：最大比例缩放；</li>
+	*<li>"full" ：不缩放，stage的宽高等于屏幕宽高；</li>
+	*<li>"fixedwidth" ：宽度不变，高度根据屏幕比缩放；</li>
+	*<li>"fixedheight" ：高度不变，宽度根据屏幕比缩放；</li>
+	*<li>"fixedauto" ：根据宽高比，自动选择使用fixedwidth或fixedheight；</li>
+	*</ul></p>
+	*/
+	__getset(0,__proto,'scaleMode',function(){
+		return this._scaleMode;
+		},function(value){
+		this._scaleMode=value;
+		Laya.timer.callLater(this,this._changeCanvasSize);
+	});
+
+	/**当前视窗由缩放模式导致的 Y 轴缩放系数。*/
+	__getset(0,__proto,'clientScaleY',function(){
+		return this._transform ? this._transform.getScaleY():1;
+	});
+
+	/**
+	*舞台是否处于可见状态(是否进入后台)。
+	*/
+	__getset(0,__proto,'isVisibility',function(){
+		return this._isVisibility;
+	});
+
+	/**
+	*舞台是否获得焦点。
+	*/
+	__getset(0,__proto,'isFocused',function(){
+		return this._isFocused;
+	});
+
+	//[Deprecated]
+	__getset(0,__proto,'desginHeight',function(){
+		console.debug("desginHeight已经弃用，请使用designHeight代替");
+		return this.designHeight;
+	});
+
+	//[Deprecated]
+	__getset(0,__proto,'desginWidth',function(){
+		console.debug("desginWidth已经弃用，请使用designWidth代替");
+		return this.designWidth;
+	});
+
+	__getset(0,__proto,'transform',function(){
+		if (this._tfChanged)this._adjustTransform();
+		return this._transform=this._transform|| Matrix.create();
+	},_super.prototype._$set_transform);
+
+	__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
+		this.designHeight=value;
+		Laya.superSet(Sprite,this,'height',value);
+		Laya.timer.callLater(this,this._changeCanvasSize);
+	});
+
+	/**当前视窗由缩放模式导致的 X 轴缩放系数。*/
+	__getset(0,__proto,'clientScaleX',function(){
+		return this._transform ? this._transform.getScaleX():1;
 	});
 
 	/**鼠标在 Stage 上的 Y 轴坐标。*/
@@ -24896,26 +25004,10 @@ var Stage=(function(_super){
 		return Math.round(MouseManager.instance.mouseY / this.clientScaleY);
 	});
 
-	/**
-	*<p>场景布局类型。</p>
-	*<p><ul>取值范围：
-	*<li>"none" ：不更改屏幕</li>
-	*<li>"horizontal" ：自动横屏</li>
-	*<li>"vertical" ：自动竖屏</li>
-	*</ul></p>
-	*/
-	__getset(0,__proto,'screenMode',function(){
-		return this._screenMode;
-		},function(value){
-		this._screenMode=value;
-	});
-
-	__getset(0,__proto,'visible',_super.prototype._$get_visible,function(value){
-		if (this.visible!==value){
-			Laya.superSet(Sprite,this,'visible',value);
-			var style=Render$1._mainCanvas.source.style;
-			style.visibility=value ? "visible" :"hidden";
-		}
+	__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
+		this.designWidth=value;
+		Laya.superSet(Sprite,this,'width',value);
+		Laya.timer.callLater(this,this._changeCanvasSize);
 	});
 
 	/**
@@ -24939,6 +25031,32 @@ var Stage=(function(_super){
 			document.removeEventListener("mozfullscreenchange",this._fullScreenChanged);
 			document.removeEventListener("webkitfullscreenchange",this._fullScreenChanged);
 			document.removeEventListener("msfullscreenchange",this._fullScreenChanged);
+		}
+	});
+
+	/**帧率类型，支持三种模式：fast-60帧(默认)，slow-30帧，mouse-30帧（鼠标活动后会自动加速到60，鼠标不动2秒后降低为30帧，以节省消耗），sleep-1帧。*/
+	__getset(0,__proto,'frameRate',function(){
+		return this._frameRate;
+		},function(value){
+		this._frameRate=value;
+		if (Render$1.isConchApp){
+			switch (this._frameRate){
+				case "slow":
+					Browser.window.conch && Browser.window.conchConfig.setSlowFrame && Browser.window.conchConfig.setSlowFrame(true);
+					break ;
+				case "fast":
+					Browser.window.conch && Browser.window.conchConfig.setSlowFrame && Browser.window.conchConfig.setSlowFrame(false);
+					break ;
+				case "mouse":
+					Browser.window.conch && Browser.window.conchConfig.setMouseFrame && Browser.window.conchConfig.setMouseFrame(2000);
+					break ;
+				case "sleep":
+					Browser.window.conch && Browser.window.conchConfig.setLimitFPS && Browser.window.conchConfig.setLimitFPS(1);
+					break ;
+				default :
+					throw new Error("Stage:frameRate invalid.");
+					break ;
+				}
 		}
 	});
 
@@ -25666,15 +25784,15 @@ var Buffer2D=(function(_super){
 		this._upload=true;
 	}
 
-	__getset(0,__proto,'bufferLength',function(){
-		return this._buffer.byteLength;
-	});
-
 	__getset(0,__proto,'byteLength',null,function(value){
 		if (this._byteLength===value)
 			return;
 		value <=this._buffer.byteLength || (this._resizeBuffer(value *2+256,true));
 		this._byteLength=value;
+	});
+
+	__getset(0,__proto,'bufferLength',function(){
+		return this._buffer.byteLength;
 	});
 
 	Buffer2D.__int__=function(gl){
@@ -25707,15 +25825,6 @@ var FileBitmap=(function(_super){
 	__class(FileBitmap,'laya.resource.FileBitmap',_super);
 	var __proto=FileBitmap.prototype;
 	/**
-	*文件路径全名。
-	*/
-	__getset(0,__proto,'src',function(){
-		return this._src;
-		},function(value){
-		this._src=value;
-	});
-
-	/**
 	*载入完成处理函数。
 	*/
 	__getset(0,__proto,'onload',null,function(value){
@@ -25725,6 +25834,15 @@ var FileBitmap=(function(_super){
 	*错误处理函数。
 	*/
 	__getset(0,__proto,'onerror',null,function(value){
+	});
+
+	/**
+	*文件路径全名。
+	*/
+	__getset(0,__proto,'src',function(){
+		return this._src;
+		},function(value){
+		this._src=value;
 	});
 
 	return FileBitmap;
@@ -25843,16 +25961,16 @@ var HTMLCanvas=(function(_super){
 	}
 
 	/**
+	*是否当作 Bitmap 对象。
+	*/
+	__getset(0,__proto,'asBitmap',null,function(value){
+	});
+
+	/**
 	*Canvas 渲染上下文。
 	*/
 	__getset(0,__proto,'context',function(){
 		return this._ctx;
-	});
-
-	/**
-	*是否当作 Bitmap 对象。
-	*/
-	__getset(0,__proto,'asBitmap',null,function(value){
 	});
 
 	HTMLCanvas.create=function(type,canvas){
@@ -25966,19 +26084,19 @@ var AtlasWebGLCanvas=(function(_super){
 	}
 
 	/***
-	*设置图片宽度
-	*@param value 图片宽度
-	*/
-	__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
-		this._w=value;
-	});
-
-	/***
 	*设置图片高度
 	*@param value 图片高度
 	*/
 	__getset(0,__proto,'height',_super.prototype._$get_height,function(value){
 		this._h=value;
+	});
+
+	/***
+	*设置图片宽度
+	*@param value 图片宽度
+	*/
+	__getset(0,__proto,'width',_super.prototype._$get_width,function(value){
+		this._w=value;
 	});
 
 	return AtlasWebGLCanvas;
@@ -26134,8 +26252,8 @@ __proto.toBase64=function(type,encoderOptions,callBack){
 }
 
 
-__getset(0,__proto,'context',function(){
-	return this._ctx;
+__getset(0,__proto,'asBitmap',null,function(value){
+	this._ctx && (this._ctx.asBitmap=value);
 });
 
 
@@ -26145,8 +26263,8 @@ __getset(0,__proto,'source',function(){
 });
 
 
-__getset(0,__proto,'asBitmap',null,function(value){
-	this._ctx && (this._ctx.asBitmap=value);
+__getset(0,__proto,'context',function(){
+	return this._ctx;
 });
 
 
@@ -26291,18 +26409,6 @@ var WebGLCharImage=(function(_super){
 
 	__proto.clearAtlasSource=function(){}
 	/**
-	*是否创建私有Source
-	*@return 是否创建
-	*/
-	__getset(0,__proto,'allowMerageInAtlas',function(){
-		return this._allowMerageInAtlas;
-	});
-
-	__getset(0,__proto,'atlasSource',function(){
-		return this.canvas;
-	});
-
-	/**
 	*是否创建私有Source,通常禁止修改
 	*@param value 是否创建
 	*/
@@ -26314,6 +26420,18 @@ var WebGLCharImage=(function(_super){
 		return this._enableMerageInAtlas;
 		},function(value){
 		this._enableMerageInAtlas=value;
+	});
+
+	/**
+	*是否创建私有Source
+	*@return 是否创建
+	*/
+	__getset(0,__proto,'allowMerageInAtlas',function(){
+		return this._allowMerageInAtlas;
+	});
+
+	__getset(0,__proto,'atlasSource',function(){
+		return this.canvas;
 	});
 
 	WebGLCharImage.createOneChar=function(content,drawValue){
@@ -26567,21 +26685,6 @@ __proto.disposeResource=function(){
 //}
 __proto.clearAtlasSource=function(){}
 /**
-*是否创建私有Source
-*@return 是否创建
-*/
-__getset(0,__proto,'allowMerageInAtlas',function(){
-	return this._allowMerageInAtlas;
-});
-
-
-//public var createFromPixel:Boolean=true;
-__getset(0,__proto,'atlasSource',function(){
-	return this.canvas;
-});
-
-
-/**
 *是否创建私有Source,通常禁止修改
 *@param value 是否创建
 */
@@ -26594,6 +26697,21 @@ __getset(0,__proto,'enableMerageInAtlas',function(){
 	},function(value){
 
 	this._allowMerageInAtlas=value;
+});
+
+
+/**
+*是否创建私有Source
+*@return 是否创建
+*/
+__getset(0,__proto,'allowMerageInAtlas',function(){
+	return this._allowMerageInAtlas;
+});
+
+
+//public var createFromPixel:Boolean=true;
+__getset(0,__proto,'atlasSource',function(){
+	return this.canvas;
 });
 
 
@@ -26811,156 +26929,16 @@ var Input=(function(_super){
 		_super.prototype.changeText.call(this,text);
 	}
 
-	/**@inheritDoc */
-	__getset(0,__proto,'color',_super.prototype._$get_color,function(value){
-		if (this._focus)
-			this.nativeInput.setColor(value);
-		Laya.superSet(Text,this,'color',this._content?value:this._promptColor);
-		this._originColor=value;
-	});
-
-	//[Deprecated]
-	__getset(0,__proto,'inputElementYAdjuster',function(){
-		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementYAdjuster已弃用。");
+	/**
+	*<p>原生输入框 X 轴调整值，用来调整输入框坐标。</p>
+	*<p>由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。</p>
+	*@deprecated
+	*/
+	__getset(0,__proto,'inputElementXAdjuster',function(){
+		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。");
 		return 0;
 		},function(value){
-		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementYAdjuster已弃用。");
-	});
-
-	/**表示是否是多行输入框。*/
-	__getset(0,__proto,'multiline',function(){
-		return this._multiline;
-		},function(value){
-		this._multiline=value;
-		this.valign=value ? "top" :"middle";
-	});
-
-	/**
-	*<p>字符数量限制，默认为10000。</p>
-	*<p>设置字符数量限制时，小于等于0的值将会限制字符数量为10000。</p>
-	*/
-	__getset(0,__proto,'maxChars',function(){
-		return this._maxChars;
-		},function(value){
-		if (value <=0)
-			value=1E5;
-		this._maxChars=value;
-	});
-
-	/**@inheritDoc */
-	__getset(0,__proto,'text',function(){
-		if (this._focus)
-			return this.nativeInput.value;
-		else
-		return this._content || "";
-		},function(value){
-		Laya.superSet(Text,this,'color',this._originColor);
-		value+='';
-		if (this._focus){
-			this.nativeInput.value=value || '';
-			this.event("change");
-			}else {
-			if (!this._multiline)
-				value=value.replace(/\r?\n/g,'');
-			this._content=value;
-			if (value)
-				Laya.superSet(Text,this,'text',value);
-			else {
-				Laya.superSet(Text,this,'text',this._prompt);
-				Laya.superSet(Text,this,'color',this.promptColor);
-			}
-		}
-	});
-
-	/**
-	*获取对输入框的引用实例。
-	*/
-	__getset(0,__proto,'nativeInput',function(){
-		return this._multiline ? Input.area :Input.input;
-	});
-
-	/**
-	*设置输入提示符。
-	*/
-	__getset(0,__proto,'prompt',function(){
-		return this._prompt;
-		},function(value){
-		if (!this._text && value)
-			Laya.superSet(Text,this,'color',this._promptColor);
-		this.promptColor=this._promptColor;
-		if (this._text)
-			Laya.superSet(Text,this,'text',(this._text==this._prompt)?value:this._text);
-		else
-		Laya.superSet(Text,this,'text',value);
-		this._prompt=Text.langPacks && Text.langPacks[value] ? Text.langPacks[value] :value;
-	});
-
-	// 因此 调用focus接口是无法都在移动平台立刻弹出键盘的
-	/**
-	*表示焦点是否在此实例上。
-	*/
-	__getset(0,__proto,'focus',function(){
-		return this._focus;
-		},function(value){
-		var input=this.nativeInput;
-		if (this._focus!==value){
-			if (value){
-				if (input.target){
-					input.target._focusOut();
-					}else {
-					this._setInputMethod();
-				}
-				input.target=this;
-				this._focusIn();
-				}else {
-				input.target=null;
-				this._focusOut();
-				Browser.document.body.scrollTop=0;
-				input.blur();
-				if (Render$1.isConchApp){
-					input.setPos(-10000,-10000);
-				}else if (Input.inputContainer.contains(input))
-				Input.inputContainer.removeChild(input);
-			}
-		}
-	});
-
-	/**限制输入的字符。*/
-	__getset(0,__proto,'restrict',function(){
-		if (this._restrictPattern){
-			return this._restrictPattern.source;
-		}
-		return "";
-		},function(pattern){
-		if (pattern){
-			pattern="[^"+pattern+"]";
-			if (pattern.indexOf("^^")>-1)
-				pattern=pattern.replace("^^","");
-			this._restrictPattern=new RegExp(pattern,"g");
-		}else
-		this._restrictPattern=null;
-	});
-
-	/**
-	*是否可编辑。
-	*/
-	__getset(0,__proto,'editable',function(){
-		return this._editable;
-		},function(value){
-		this._editable=value;
-		if (Render$1.isConchApp){
-			Input.input.setForbidEdit(!value);
-		}
-	});
-
-	/**
-	*设置输入提示符颜色。
-	*/
-	__getset(0,__proto,'promptColor',function(){
-		return this._promptColor;
-		},function(value){
-		this._promptColor=value;
-		if (!this._content)Laya.superSet(Text,this,'color',value);
+		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。");
 	});
 
 	/**
@@ -26995,15 +26973,55 @@ var Input=(function(_super){
 	});
 
 	/**
-	*<p>原生输入框 X 轴调整值，用来调整输入框坐标。</p>
-	*<p>由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。</p>
-	*@deprecated
+	*是否可编辑。
 	*/
-	__getset(0,__proto,'inputElementXAdjuster',function(){
-		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。");
-		return 0;
+	__getset(0,__proto,'editable',function(){
+		return this._editable;
 		},function(value){
-		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementXAdjuster已弃用。");
+		this._editable=value;
+		if (Render$1.isConchApp){
+			Input.input.setForbidEdit(!value);
+		}
+	});
+
+	/**
+	*设置输入提示符。
+	*/
+	__getset(0,__proto,'prompt',function(){
+		return this._prompt;
+		},function(value){
+		if (!this._text && value)
+			Laya.superSet(Text,this,'color',this._promptColor);
+		this.promptColor=this._promptColor;
+		if (this._text)
+			Laya.superSet(Text,this,'text',(this._text==this._prompt)?value:this._text);
+		else
+		Laya.superSet(Text,this,'text',value);
+		this._prompt=Text.langPacks && Text.langPacks[value] ? Text.langPacks[value] :value;
+	});
+
+	/**限制输入的字符。*/
+	__getset(0,__proto,'restrict',function(){
+		if (this._restrictPattern){
+			return this._restrictPattern.source;
+		}
+		return "";
+		},function(pattern){
+		if (pattern){
+			pattern="[^"+pattern+"]";
+			if (pattern.indexOf("^^")>-1)
+				pattern=pattern.replace("^^","");
+			this._restrictPattern=new RegExp(pattern,"g");
+		}else
+		this._restrictPattern=null;
+	});
+
+	/**@inheritDoc */
+	__getset(0,__proto,'color',_super.prototype._$get_color,function(value){
+		if (this._focus)
+			this.nativeInput.setColor(value);
+		Laya.superSet(Text,this,'color',this._content?value:this._promptColor);
+		this._originColor=value;
 	});
 
 	//[Deprecated(replacement="Input.type")]
@@ -27014,6 +27032,106 @@ var Input=(function(_super){
 		this._type="password";
 		console.warn("deprecated: 使用type=\"password\"替代设置asPassword, asPassword将在下次重大更新时删去");
 		this.isChanged=true;
+	});
+
+	/**
+	*<p>字符数量限制，默认为10000。</p>
+	*<p>设置字符数量限制时，小于等于0的值将会限制字符数量为10000。</p>
+	*/
+	__getset(0,__proto,'maxChars',function(){
+		return this._maxChars;
+		},function(value){
+		if (value <=0)
+			value=1E5;
+		this._maxChars=value;
+	});
+
+	//[Deprecated]
+	__getset(0,__proto,'inputElementYAdjuster',function(){
+		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementYAdjuster已弃用。");
+		return 0;
+		},function(value){
+		console.warn("deprecated: 由于即使设置了该值，在各平台和浏览器之间也不一定一致，inputElementYAdjuster已弃用。");
+	});
+
+	/**@inheritDoc */
+	__getset(0,__proto,'text',function(){
+		if (this._focus)
+			return this.nativeInput.value;
+		else
+		return this._content || "";
+		},function(value){
+		Laya.superSet(Text,this,'color',this._originColor);
+		value+='';
+		if (this._focus){
+			this.nativeInput.value=value || '';
+			this.event("change");
+			}else {
+			if (!this._multiline)
+				value=value.replace(/\r?\n/g,'');
+			this._content=value;
+			if (value)
+				Laya.superSet(Text,this,'text',value);
+			else {
+				Laya.superSet(Text,this,'text',this._prompt);
+				Laya.superSet(Text,this,'color',this.promptColor);
+			}
+		}
+	});
+
+	/**
+	*设置输入提示符颜色。
+	*/
+	__getset(0,__proto,'promptColor',function(){
+		return this._promptColor;
+		},function(value){
+		this._promptColor=value;
+		if (!this._content)Laya.superSet(Text,this,'color',value);
+	});
+
+	// 因此 调用focus接口是无法都在移动平台立刻弹出键盘的
+	/**
+	*表示焦点是否在此实例上。
+	*/
+	__getset(0,__proto,'focus',function(){
+		return this._focus;
+		},function(value){
+		var input=this.nativeInput;
+		if (this._focus!==value){
+			if (value){
+				if (input.target){
+					input.target._focusOut();
+					}else {
+					this._setInputMethod();
+				}
+				input.target=this;
+				this._focusIn();
+				}else {
+				input.target=null;
+				this._focusOut();
+				Browser.document.body.scrollTop=0;
+				input.blur();
+				if (Render$1.isConchApp){
+					input.setPos(-10000,-10000);
+				}else if (Input.inputContainer.contains(input))
+				Input.inputContainer.removeChild(input);
+			}
+		}
+	});
+
+	/**
+	*获取对输入框的引用实例。
+	*/
+	__getset(0,__proto,'nativeInput',function(){
+		return this._multiline ? Input.area :Input.input;
+	});
+
+	/**表示是否是多行输入框。*/
+	__getset(0,__proto,'multiline',function(){
+		return this._multiline;
+		},function(value){
+		this._multiline=value;
+		this.valign=value ? "top" :"middle";
 	});
 
 	Input.__init__=function(){
@@ -27250,16 +27368,13 @@ var HTMLImage=(function(_super){
 		this._h=this._source.height;
 	}
 
-	/**
-	*@inheritDoc
-	*/
-	__getset(0,__proto,'onload',null,function(value){
-		var _$this=this;
-		this._onload=value;
-		this._source && (this._source.onload=this._onload !=null ? (function(){
-			_$this.onresize();
-			_$this._onload();
-		}):null);
+	__getset(0,__proto,'enableMerageInAtlas',function(){
+		return this._enableMerageInAtlas;
+		},function(value){
+		this._enableMerageInAtlas=value;
+		if (Render$1.isConchApp){
+			if (this._source)this._source.enableMerageInAtlas=value;
+		}
 	});
 
 	/**
@@ -27273,13 +27388,16 @@ var HTMLImage=(function(_super){
 		}):null);
 	});
 
-	__getset(0,__proto,'enableMerageInAtlas',function(){
-		return this._enableMerageInAtlas;
-		},function(value){
-		this._enableMerageInAtlas=value;
-		if (Render$1.isConchApp){
-			if (this._source)this._source.enableMerageInAtlas=value;
-		}
+	/**
+	*@inheritDoc
+	*/
+	__getset(0,__proto,'onload',null,function(value){
+		var _$this=this;
+		this._onload=value;
+		this._source && (this._source.onload=this._onload !=null ? (function(){
+			_$this.onresize();
+			_$this._onload();
+		}):null);
 	});
 
 	HTMLImage.create=function(src,def){
@@ -27575,46 +27693,6 @@ var WebGLImage=(function(_super){
 		this._image=null;
 	}
 
-	/**
-	*获取纹理格式。
-	*/
-	__getset(0,__proto,'format',function(){
-		return this._format;
-	});
-
-	/**
-	*是否创建私有Source,通常禁止修改
-	*@param value 是否创建
-	*/
-	/**
-	*是否创建私有Source
-	*@return 是否创建
-	*/
-	__getset(0,__proto,'enableMerageInAtlas',function(){
-		return this._$5__enableMerageInAtlas;
-		},function(value){
-		this._$5__enableMerageInAtlas=value;
-	});
-
-	/**
-	*获取是否具有mipmap。
-	*/
-	__getset(0,__proto,'mipmap',function(){
-		return this._mipmap;
-	});
-
-	/**
-	*是否创建私有Source
-	*@return 是否创建
-	*/
-	__getset(0,__proto,'allowMerageInAtlas',function(){
-		return this._allowMerageInAtlas;
-	});
-
-	__getset(0,__proto,'atlasSource',function(){
-		return this._image;
-	});
-
 	/***
 	*设置onload函数
 	*@param value onload函数
@@ -27640,11 +27718,51 @@ var WebGLImage=(function(_super){
 		}):null);
 	});
 
+	/**
+	*获取纹理格式。
+	*/
+	__getset(0,__proto,'format',function(){
+		return this._format;
+	});
+
+	/**
+	*是否创建私有Source,通常禁止修改
+	*@param value 是否创建
+	*/
+	/**
+	*是否创建私有Source
+	*@return 是否创建
+	*/
+	__getset(0,__proto,'enableMerageInAtlas',function(){
+		return this._$5__enableMerageInAtlas;
+		},function(value){
+		this._$5__enableMerageInAtlas=value;
+	});
+
+	__getset(0,__proto,'atlasSource',function(){
+		return this._image;
+	});
+
+	/**
+	*是否创建私有Source
+	*@return 是否创建
+	*/
+	__getset(0,__proto,'allowMerageInAtlas',function(){
+		return this._allowMerageInAtlas;
+	});
+
+	/**
+	*获取是否具有mipmap。
+	*/
+	__getset(0,__proto,'mipmap',function(){
+		return this._mipmap;
+	});
+
 	return WebGLImage;
 })(HTMLImage)
 
 
-	Laya.__init([EventDispatcher,LoaderManager,Render$1,DrawText,Browser,WebGLContext2D,ShaderCompile,Timer,LocalStorage,AtlasGrid]);
+	Laya.__init([LoaderManager,EventDispatcher,LocalStorage,AtlasGrid,DrawText,Render$1,Timer,WebGLContext2D,ShaderCompile,Browser]);
 	/**LayaGameStart**/
 	new LayaSample();
 

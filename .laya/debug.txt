@@ -1,0 +1,19 @@
+1,0.00,,0,Project command:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/.actionScriptProperties;iflash=false;windowshow=false;chromerun=false;quickcompile=true
+Project configuration:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/.actionScriptProperties.
+1,0.00,,0,output path:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/
+1,0.00,,0,Main Class:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/src/LayaSample.as
+1,0.00,,0,output file:LayaSample
+1,0.00,,0,compilerSourcePath /Users/zenoslin/Documents/GitHub/Tetris-Layabox/libs/laya/src/
+
+1,0.00,,0,Compile Path:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/src/
+
+1,0.00,,0,Compile Path:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/libs/laya/src/
+
+1,0.00,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/src,0,Collect
+1,0.00,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/libs/laya/src,0,Collect
+1,2.00,,0,read class message
+1,89.84,,0,Disable Flash3D /Users/zenoslin/Documents/GitHub/Tetris-Layabox/src/LayaSample.as
+12,89.84,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/LayaSample.max.js,834006,
+11,89.84,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/LayaSample.max.html,874,
+******************************************************************************
+14,89.84,,0,
