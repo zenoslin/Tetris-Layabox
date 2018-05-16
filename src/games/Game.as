@@ -72,7 +72,7 @@ package games {
 		public function clearData(data):void {
 			for (var i:int = 0; i < nextData.length; i++) {
 				for (var j:int = 0; j < nextData[0].length; j++) {
-					gameData[nextOrigin.y + i][nextOrigin.y + j] = 0;
+					gameData[nextOrigin.y + i][nextOrigin.x + j] = 0;
 				}
 			}
 		}

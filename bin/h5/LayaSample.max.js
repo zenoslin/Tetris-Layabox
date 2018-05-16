@@ -493,7 +493,7 @@ var Game=(function(){
 	__proto.clearData=function(data){
 		for (var i=0;i < this.nextData.length;i++){
 			for (var j=0;j < this.nextData[0].length;j++){
-				this.gameData[this.nextOrigin.y+i][this.nextOrigin.y+j]=0;
+				this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=0;
 			}
 		}
 	}
@@ -646,8 +646,8 @@ var SquareFactory=(function(){
 	__proto.shapeS=function(){
 		this.data=[
 		[0,1,1,0],
-		[0,1,0,0],
 		[1,1,0,0],
+		[0,0,0,0],
 		[0,0,0,0]];
 		return this.data;
 	}
