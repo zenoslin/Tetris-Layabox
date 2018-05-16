@@ -1,2 +1,23 @@
-Project configuration:d:\Documents\myLayaaaaqaaaaaqqsaaaaaaaareqaaaaasaaqq/.actionScriptProperties.
+1,0.00,,0,Project command:d:\Mcode\Tetris-Layabox/.actionScriptProperties;iflash=false;windowshow=false;chromerun=false;quickcompile=true
+Project configuration:d:\Mcode\Tetris-Layabox/.actionScriptProperties.
+1,0.00,,0,output path:d:/Mcode/Tetris-Layabox/bin/h5/
+1,0.00,,0,Main Class:d:/Mcode/Tetris-Layabox/src/LayaSample.as
+1,0.00,,0,output file:LayaSample
+1,0.00,,0,compilerSourcePath d:/Mcode/Tetris-Layabox/libs/laya/src/
+
+1,0.00,,0,Compile Path:d:/Mcode/Tetris-Layabox/src/
+
+1,0.00,,0,Compile Path:d:/Mcode/Tetris-Layabox/libs/laya/src/
+
+1,0.00,d:/Mcode/Tetris-Layabox/src,0,Collect
+1,0.00,d:/Mcode/Tetris-Layabox/libs/laya/src,0,Collect
+1,2.00,,0,read class message
+7,50.00,d:/Mcode/Tetris-Layabox/src/games/Keyboard.as,6,controlDonw This variable is not defined.
+1,89.68,,0,Disable Flash3D d:/Mcode/Tetris-Layabox/src/LayaSample.as
+12,89.68,d:/Mcode/Tetris-Layabox/bin/h5/LayaSample.max.js,831423,
+11,89.68,d:/Mcode/Tetris-Layabox/bin/h5/LayaSample.max.html,893,
 ******************************************************************************
+Error or warning message:LayaSample.max.js
+1 file:///d:/Mcode/Tetris-Layabox/src/games/Keyboard.as (7):warning:controlDonw This variable is not defined.
+******************************************************************************
+14,89.68,,0,
