@@ -8,21 +8,30 @@ package games {
 
 		}
 		
-		public function randomShape():Array {
+		public function randomShape():Object {
 			var squareFactory:SquareFactory = new SquareFactory();
+			var tempData:Object = {
+				type:0,
+				data:[]
+			}; 
 			
 			randomNum = Math.random();
-			trace(randomNum);
+			// trace(randomNum);
 			if (randomNum < 0.2) {
-				tempData = squareFactory.shapeI();
+				tempData.type = 1;
+				tempData.data = squareFactory.shapeI();
 			}else if (randomNum < 0.4) {
-				tempData = squareFactory.shapeL();
+				tempData.type = 2;
+				tempData.data = squareFactory.shapeL();
 			}else if (randomNum < 0.6) {
-				tempData = squareFactory.shapeO();
+				tempData.type = 3;
+				tempData.data = squareFactory.shapeO();
 			}else if (randomNum < 0.8) {
-				tempData = squareFactory.shapeS();
+				tempData.type = 4;
+				tempData.data = squareFactory.shapeS();
 			}else{
-				tempData = squareFactory.shapeT();
+				tempData.type = 5;
+				tempData.data = squareFactory.shapeT();
 			}
 			return tempData;
 		}
