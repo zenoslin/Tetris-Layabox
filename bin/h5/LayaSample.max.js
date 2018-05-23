@@ -431,38 +431,53 @@ var ___Laya=(function(){
 })()
 
 
+//class games.Data
+var Data=(function(){
+	function Data(){}
+	__class(Data,'games.Data');
+	Data.gameData=null;
+	Data.rowsNum=20;
+	Data.colsNum=10;
+	Data.fontFamily="Arial";
+	return Data;
+})()
+
+
 //class games.Game
 var Game=(function(){
 	function Game(){
-		// 行列数
-		this.rowsNum=20;
-		this.colsNum=10;
-		this.data=null;
-		this.gameData=null;
+		//private var data:Array;
+		this.nextShape=null;
+		this.nextType=0;
 		this.nextData=null;
 		// 数据
 		this.nextOrigin=null;
+		// 原点
+		this.dir=0;
 		// 绑定按键
 		this.btnLeft=37;
 		this.btnRight=39;
 		this.btnDown=40;
-		this.square=new Square;
-		this.render=new Render;
-		this.listenKeyboard();
+		this.btnRotate=38;
+		this.square=new Square();
+		this.render=new Render();
+		this.factory=new SquareFactory();
 	}
 
 	__class(Game,'games.Game');
 	var __proto=Game.prototype;
 	// 游戏初始化
-	__proto.gamestart=function(){
-		this.gameData=[];
-		for (var i=0;i < this.rowsNum;i++){
-			this.gameData[i]=[];
-			for (var j=0;j < this.colsNum;j++){
-				this.gameData[i][j]=0;
+	__proto.gameStart=function(){
+		Data.gameData=[];
+		for (var i=0;i < Data.rowsNum;i++){
+			Data.gameData[i]=[];
+			for (var j=0;j < Data.colsNum;j++){
+				Data.gameData[i][j]=0;
 			}
 		}
-		this.render.refresh(this.gameData);
+		this.render.clearBlurFilter();
+		this.nextSquare();
+		this.render.startRender(Data.gameData);
 	}
 
 	__proto.nextSquare=function(){
@@ -473,18 +488,26 @@ var Game=(function(){
 				this.nextData[i][j]=0;
 			}
 		}
-		this.nextOrigin={x:0,y:0};
+		this.nextShape={};
+		this.nextType=0;
+		this.nextOrigin={x:3,y:0};
+		this.dir=0;
 		this.clearData(this.nextData);
-		this.nextData=this.square.randomShape();
+		this.nextShape=this.square.randomShape();
+		this.nextData=this.nextShape.data;
+		this.nextType=this.nextShape.type;
 		this.setData(this.nextData);
-		this.render.refresh(this.gameData);
+		this.render.refresh(Data.gameData);
+		this.autoFall();
 	}
 
 	// 设置数据
 	__proto.setData=function(data){
 		for (var i=0;i < this.nextData.length;i++){
 			for (var j=0;j < this.nextData[0].length;j++){
-				this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=this.nextData[i][j];
+				if (this.check(this.nextOrigin,j,i)){
+					Data.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=this.nextData[i][j];
+				}
 			}
 		}
 	}
@@ -493,7 +516,9 @@ var Game=(function(){
 	__proto.clearData=function(data){
 		for (var i=0;i < this.nextData.length;i++){
 			for (var j=0;j < this.nextData[0].length;j++){
-				this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=0;
+				if (this.check(this.nextOrigin,j,i)){
+					Data.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=0;
+				}
 			}
 		}
 	}
@@ -505,86 +530,153 @@ var Game=(function(){
 
 	// 控制
 	__proto.console=function(){
-		if (KeyBoardManager.hasKeyDown(this.btnDown)){
+		if (KeyBoardManager.hasKeyDown(40)){
 			this.controlDown();
-			}else if(KeyBoardManager.hasKeyDown(this.btnLeft)){
+			}else if (KeyBoardManager.hasKeyDown(37)){
 			this.controlLeft();
-			}else if (KeyBoardManager.hasKeyDown(this.btnRight)){
+			}else if (KeyBoardManager.hasKeyDown(39)){
 			this.controlRight();
+			}else if (KeyBoardManager.hasKeyDown(38)){
+			this.rotate();
+			}else if (KeyBoardManager.hasKeyDown(32)){
+			this.fall();
 		}
 	}
 
 	// 下、左、右
 	__proto.controlDown=function(){
-		if(this.canDown(this.isValid)){
+		if (this.canDown()){
 			this.clearData(this.nextData);
 			this.nextOrigin.y=this.nextOrigin.y+1;
 			this.setData(this.nextData);
-			this.render.refresh(this.gameData);
+			this.render.refresh(Data.gameData);
+			return true;
+			}else {
+			this.fixed();
+			this.checkClear();
+			this.render.refresh(Data.gameData);
+			return false;
 		}
 	}
 
 	__proto.controlLeft=function(){
-		if(this.canLeft(this.isValid)){
+		if (this.canLeft()){
 			this.clearData(this.nextData);
 			this.nextOrigin.x=this.nextOrigin.x-1;
 			this.setData(this.nextData);
-			this.render.refresh(this.gameData);
+			this.render.refresh(Data.gameData);
 		}
 	}
 
 	__proto.controlRight=function(){
-		if(this.canRight(this.isValid)){
+		if (this.canRight()){
 			this.clearData(this.nextData);
 			this.nextOrigin.x=this.nextOrigin.x+1;
 			this.setData(this.nextData);
-			this.render.refresh(this.gameData);
+			this.render.refresh(Data.gameData);
 		}
 	}
 
-	__proto.canDown=function(isValid){
-		var test={};
-		test.x=this.nextData.x+1;
-		test.y=this.nextData.y;
-		return isValid(test,this.data);
+	// 旋转
+	__proto.rotate=function(){
+		if (this.canRotate()){
+			this.clearData(this.nextData);
+			this.dir+=1;
+			this.dir=this.dir % 4;
+			var roData=this.chooseType();
+			for (var i=0;i < this.nextData.length;i++){
+				for (var j=0;j < this.nextData[0].length;j++){
+					this.nextData[i][j]=roData[i][j];
+				}
+			}
+			this.setData(this.nextData);
+			this.render.refresh(Data.gameData);
+		}
 	}
 
-	__proto.canLeft=function(isValid){
-		var test={};
-		test.x=this.nextData.x;
-		test.y=this.nextData.y-1;
-		return isValid(test,this.data);
+	// 下落
+	__proto.fall=function(){
+		while (this.controlDown());
 	}
 
-	__proto.canRight=function(isValid){
-		var test={};
-		test.x=this.nextData.x;
-		test.y=this.nextData.y+1;
-		return isValid(test,this.data);
+	__proto.chooseType=function(){
+		switch (this.nextType){
+			case 1:
+				return this.factory.roShapeI(this.dir);
+				break ;
+			case 2:
+				return this.factory.roShapeL(this.dir);
+				break ;
+			case 3:
+				return this.factory.roShapeO(this.dir);
+				break ;
+			case 4:
+				return this.factory.roShapeS(this.dir);
+				break ;
+			case 5:
+				return this.factory.roShapeT(this.dir);
+				break ;
+			default :
+				return [];
+			}
+	}
+
+	__proto.canDown=function(){
+		var test={x:0,y:0};
+		test.x=this.nextOrigin.x;
+		test.y=this.nextOrigin.y+1;
+		return this.isValid(test,this.nextData);
+	}
+
+	__proto.canLeft=function(){
+		var test={x:0,y:0};
+		test.x=this.nextOrigin.x-1;
+		test.y=this.nextOrigin.y;
+		return this.isValid(test,this.nextData);
+	}
+
+	__proto.canRight=function(){
+		var test={x:0,y:0};
+		test.x=this.nextOrigin.x+1;
+		test.y=this.nextOrigin.y;
+		return this.isValid(test,this.nextData);
+	}
+
+	__proto.canRotate=function(){
+		var d=(this.dir+1)% 4;
+		var test=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+		var roData=this.chooseType();
+		for (var i=0;i < test.length;i++){
+			for (var j=0;j < test[0].length;j++){
+				test[i][j]=roData[d][i][j];
+			}
+		}
+		return this.isValid(this.nextOrigin,test);
 	}
 
 	// 检测点是否合法
 	__proto.check=function(pos,x,y){
-		if (pos.x+x < 0){
+		if (pos.y+y < 0){
 			return false;
-			}else if (pos.x+x >=this.gameData.length){
+			}else if (pos.y+y >=Data.gameData.length){
 			return false;
-			}else if (pos.y+y < 0){
+			}else if (pos.x+x < 0){
 			return false;
-			}else if (pos.y+y >=this.gameData[0].length){
+			}else if (pos.x+x >=Data.gameData[0].length){
 			return false;
-			}else if (this.gameData[pos.x+x][pos.y+y]===1){
+			}else if (Data.gameData[pos.y+y][pos.x+x]===Render.fixBox){
 			return false;
 			}else {
 			return true;
 		}
 	}
 
+	// 检测数据是否合法
 	__proto.isValid=function(pos,data){
 		for (var i=0;i < data.length;i++){
 			for (var j=0;j < data[0].length;j++){
 				if (data[i][j] !=0){
-					if (!this.check(pos,i,j)){
+					if (!this.check(pos,j,i)){
 						return false;
 					}
 				}
@@ -595,38 +687,36 @@ var Game=(function(){
 
 	// 方块移动到底部固定
 	__proto.fixed=function(){
-		for (var i=0;i < this.nextData.length;i++){
-			for (var j=0;j < this.nextData[0].length;j++){
-				if (this.check(this.nextOrigin,i,j)){
-					if (this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]==2){
-						this.gameData[this.nextOrigin.y+i][this.nextOrigin.x+j]=1;
-					}
+		for (var i=0;i < Data.gameData.length;i++){
+			for (var j=0;j < Data.gameData[0].length;j++){
+				if (Data.gameData[i][j]==Render.fallBox){
+					Data.gameData[i][j]=Render.fixBox;
 				}
 			}
 		}
-		this.render.refresh(this.gameData);
+		this.gameOver();
 	}
 
 	// 消行
 	__proto.checkClear=function(){
 		var line=0;
-		for (var i=this.gameData.length-1;i >=0;i--){
+		for (var i=Data.gameData.length-1;i >=0;i--){
 			var clear=true;
-			for (var j=0;j < this.gameData[0].length;j++){
-				if (this.gameData[i][j] !=1){
+			for (var j=0;j < Data.gameData[0].length;j++){
+				if (Data.gameData[i][j] !=2){
 					clear=false;
 					break ;
 				}
 			}
 			if (clear){
-				line+=1;
+				line++;
 				for (var m=i;m > 0;m--){
-					for (var n=0;n < this.gameData[0].length;n++){
-						this.gameData[m][n]=this.gameData[m-1][n];
+					for (var n=0;n < Data.gameData[0].length;n++){
+						Data.gameData[m][n]=Data.gameData[m-1][n];
 					}
 				}
-				for (var k=0;k < this.gameData[0].length;k++){
-					this.gameData[0][k]=0;
+				for (var k=0;k < Data.gameData[0].length;k++){
+					Data.gameData[0][k]=0;
 				}
 				i++;
 			}
@@ -634,11 +724,15 @@ var Game=(function(){
 		return line;
 	}
 
+	__proto.autoFall=function(){
+		Laya.timer.loop(500,this,this.controlDown);
+	}
+
 	// 检查游戏结束
 	__proto.checkGameOver=function(){
 		var gameOver=false;
-		for (var i=0;i < this.gameData[0].length;i++){
-			if (this.gameData[1][i]===1){
+		for (var i=0;i < Data.gameData[0].length;i++){
+			if (Data.gameData[0][i]===Render.fixBox){
 				gameOver=true;
 			}
 		}
@@ -646,12 +740,60 @@ var Game=(function(){
 	}
 
 	// 界面显示游戏结束
-	__proto.gameOver=function(win){
-		if (win){
-		}else {}
+	__proto.gameOver=function(){
+		if (this.checkGameOver()){
+			Laya.timer.clearAll(this);
+			this.render.overText();
+			this.render.createBlurFilter();
+			}else {
+			this.nextSquare();
+		}
 	}
 
+	Game.getInstance=function(){
+		if(!Game.single){
+			Game.single=new Game();
+		}
+		return Game.single;
+	}
+
+	Game.single=null;
 	return Game;
+})()
+
+
+//class games.Local
+var Local=(function(){
+	function Local(){
+		this._newGame();
+		this._init();
+	}
+
+	__class(Local,'games.Local');
+	var __proto=Local.prototype;
+	__proto._init=function(){
+		var game=Game.getInstance();
+		game.listenKeyboard();
+	}
+
+	__proto._newGame=function(){
+		var newGameBtn=new Sprite;
+		Laya.stage.addChild(newGameBtn);
+		newGameBtn.pos(550,440);
+		newGameBtn.size(80,40);
+		newGameBtn.mouseEnabled=true;
+		newGameBtn.graphics.drawRect(0,0,100,40,"#708090");
+		newGameBtn.on("click",Game.getInstance(),Game.getInstance().gameStart);
+		var text=new Text;
+		Laya.stage.addChild(text);
+		text.text="New Game"
+		text.color="#FFFFFF"
+		text.font=Data.fontFamily;
+		text.fontSize=14;
+		text.pos(564,454);
+	}
+
+	return Local;
 })()
 
 
@@ -663,25 +805,20 @@ var Render=(function(){
 		// 方块原点
 		this.boxOriginX=0;
 		this.boxOriginY=0;
-		this.sp=null;
-		// 方块类型，正在下落fallBox；已经落地fixedBox
-		this.fallBox=1;
-		this.fixBox=2;
+		this.sp=new Sprite();
 	}
 
 	__class(Render,'games.Render');
 	var __proto=Render.prototype;
-	// 渲染视图
-	__proto.refresh=function(data){
-		this.sp=new Sprite();
+	__proto.startRender=function(data){
 		Laya.stage.addChild(this.sp);
 		for (var i=0;i < data.length;i++){
 			for (var j=0;j < data[0].length;j++){
 				this.boxOriginX=j *this.boxSize;
 				this.boxOriginY=i *this.boxSize;
-				if(data[i][j]==this.fixBox){
+				if (data[i][j]==Render.fixBox){
 					this.sp.graphics.drawRect(this.boxOriginX,this.boxOriginY,40,40,"#63B8FF","#000000",2);
-					}else if(data[i][j]==this.fallBox){
+					}else if (data[i][j]==Render.fallBox){
 					this.sp.graphics.drawRect(this.boxOriginX,this.boxOriginY,40,40,"#FF3030","#000000",2);
 					}else {
 					this.sp.graphics.drawRect(this.boxOriginX,this.boxOriginY,40,40,"#FFFFFF");
@@ -690,6 +827,51 @@ var Render=(function(){
 		}
 	}
 
+	// 渲染视图
+	__proto.refresh=function(data){
+		this.sp.graphics.clear();
+		for (var i=0;i < data.length;i++){
+			for (var j=0;j < data[0].length;j++){
+				this.boxOriginX=j *this.boxSize;
+				this.boxOriginY=i *this.boxSize;
+				if (data[i][j]==Render.fixBox){
+					this.sp.graphics.drawRect(this.boxOriginX,this.boxOriginY,40,40,"#63B8FF","#000000",2);
+					}else if (data[i][j]==Render.fallBox){
+					this.sp.graphics.drawRect(this.boxOriginX,this.boxOriginY,40,40,"#FF3030","#000000",2);
+					}else {
+					this.sp.graphics.drawRect(this.boxOriginX,this.boxOriginY,40,40,"#FFFFFF");
+				}
+			}
+		}
+	}
+
+	// 死亡文本
+	__proto.overText=function(){
+		var overtext=new Text();
+		overtext.text="Game Over!";
+		overtext.color='#FF0000';
+		overtext.fontSize=48;
+		overtext.font="Arial";
+		overtext.stroke=5;
+		overtext.strokeColor='#FFFFFF';
+		overtext.bold=true;
+		overtext.pos(60,360);
+		Laya.stage.addChild(overtext);
+	}
+
+	// 虚化滤镜
+	__proto.createBlurFilter=function(){
+		var blurFilter=new BlurFilter();
+		blurFilter.strength=6;
+		this.sp.filters=[blurFilter];
+	}
+
+	__proto.clearBlurFilter=function(){
+		this.sp.filters=[];
+	}
+
+	Render.fallBox=1;
+	Render.fixBox=2;
 	return Render;
 })()
 
@@ -706,20 +888,28 @@ var Square=(function(){
 	var __proto=Square.prototype;
 	__proto.randomShape=function(){
 		var squareFactory=new SquareFactory();
+		var tempData={
+			type:0,
+			data:[]
+		};
 		this.randomNum=Math.random();
-		console.log(this.randomNum);
 		if (this.randomNum < 0.2){
-			this.tempData=squareFactory.shapeI();
+			tempData.type=1;
+			tempData.data=squareFactory.shapeI();
 			}else if (this.randomNum < 0.4){
-			this.tempData=squareFactory.shapeL();
+			tempData.type=2;
+			tempData.data=squareFactory.shapeL();
 			}else if (this.randomNum < 0.6){
-			this.tempData=squareFactory.shapeO();
+			tempData.type=3;
+			tempData.data=squareFactory.shapeO();
 			}else if (this.randomNum < 0.8){
-			this.tempData=squareFactory.shapeS();
+			tempData.type=4;
+			tempData.data=squareFactory.shapeS();
 			}else{
-			this.tempData=squareFactory.shapeT();
+			tempData.type=5;
+			tempData.data=squareFactory.shapeT();
 		}
-		return this.tempData;
+		return tempData;
 	}
 
 	return Square;
@@ -734,6 +924,7 @@ var SquareFactory=(function(){
 
 	__class(SquareFactory,'games.SquareFactory');
 	var __proto=SquareFactory.prototype;
+	// 方块I
 	__proto.shapeI=function(){
 		this.data=[
 		[0,1,0,0],
@@ -743,6 +934,32 @@ var SquareFactory=(function(){
 		return this.data;
 	}
 
+	__proto.roShapeI=function(index){
+		var rotates=[
+		[
+		[0,1,0,0],
+		[0,1,0,0],
+		[0,1,0,0],
+		[0,1,0,0]],
+		[
+		[0,0,0,0],
+		[1,1,1,1],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,0,0],
+		[0,1,0,0],
+		[0,1,0,0],
+		[0,1,0,0]],
+		[
+		[0,0,0,0],
+		[1,1,1,1],
+		[0,0,0,0],
+		[0,0,0,0]]]
+		return rotates[index];
+	}
+
+	// 方块L
 	__proto.shapeL=function(){
 		this.data=[
 		[1,0,0,0],
@@ -752,6 +969,32 @@ var SquareFactory=(function(){
 		return this.data;
 	}
 
+	__proto.roShapeL=function(index){
+		var rotates=[
+		[
+		[1,0,0,0],
+		[1,0,0,0],
+		[1,1,0,0],
+		[0,0,0,0]],
+		[
+		[1,1,1,0],
+		[1,0,0,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,1,0],
+		[0,0,1,0],
+		[0,0,1,0],
+		[0,0,0,0]],
+		[
+		[0,0,0,0],
+		[0,0,1,0],
+		[1,1,1,0],
+		[0,0,0,0]]]
+		return rotates[index];
+	}
+
+	// 方块O
 	__proto.shapeO=function(){
 		this.data=[
 		[0,1,1,0],
@@ -761,6 +1004,33 @@ var SquareFactory=(function(){
 		return this.data;
 	}
 
+	__proto.roShapeO=function(index){
+		var rotates=[
+		[
+		[0,1,1,0],
+		[0,1,1,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,1,0],
+		[0,1
+		,1,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,1,0],
+		[0,1,1,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,1,0],
+		[0,1,1,0],
+		[0,0,0,0],
+		[0,0,0,0]]]
+		return rotates[index];
+	}
+
+	// 方块S
 	__proto.shapeS=function(){
 		this.data=[
 		[0,1,1,0],
@@ -770,6 +1040,32 @@ var SquareFactory=(function(){
 		return this.data;
 	}
 
+	__proto.roShapeS=function(index){
+		var rotates=[
+		[
+		[0,1,1,0],
+		[1,1,0,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,0,0],
+		[0,1,1,0],
+		[0,0,1,0],
+		[0,0,0,0]],
+		[
+		[0,1,1,0],
+		[1,1,0,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,1,0,0],
+		[0,1,1,0],
+		[0,0,1,0],
+		[0,0,0,0]]]
+		return rotates[index];
+	}
+
+	// 方块T
 	__proto.shapeT=function(){
 		this.data=[
 		[1,1,1,0],
@@ -779,6 +1075,31 @@ var SquareFactory=(function(){
 		return this.data;
 	}
 
+	__proto.roShapeT=function(index){
+		var rotates=[
+		[
+		[1,1,1,0],
+		[0,1,0,0],
+		[0,0,0,0],
+		[0,0,0,0]],
+		[
+		[0,0,1,0],
+		[0,1,1,0],
+		[0,0,1,0],
+		[0,0,0,0]],
+		[
+		[0,0,0,0],
+		[0,1,0,0],
+		[1,1,1,0],
+		[0,0,0,0]],
+		[
+		[1,0,0,0],
+		[1,1,0,0],
+		[1,0,0,0],
+		[0,0,0,0]]]
+		return rotates[index];
+	}
+
 	return SquareFactory;
 })()
 
@@ -786,20 +1107,46 @@ var SquareFactory=(function(){
 //class LayaSample
 var LayaSample=(function(){
 	function LayaSample(){
-		Laya.init(400,800,WebGL);
+		Laya.init(800,800,WebGL);
 		Laya.stage.alignH="center";
 		Laya.stage.alignV="middle"
 		Laya.stage.scaleMode="showall";
 		Laya.stage.bgColor="#FFFFFF";
-		this.init();
+		this._backGround();
+		this._gameBox();
+		this._gameTitle();
+		this._init();
 	}
 
 	__class(LayaSample,'LayaSample');
 	var __proto=LayaSample.prototype;
-	__proto.init=function(){
-		var game=new Game();
-		game.gamestart();
-		game.nextSquare();
+	__proto._init=function(){
+		var local=new Local();
+	}
+
+	__proto._backGround=function(){
+		var backGround=new Sprite;
+		Laya.stage.addChild(backGround);
+		backGround.graphics.drawRect(400,0,400,800,"#FFF68F");
+	}
+
+	__proto._gameBox=function(){
+		var boxBorder=new Sprite();
+		Laya.stage.addChild(boxBorder);
+		boxBorder.graphics.drawRect(520,80,160,160,"#FFFFFF","#000000",2);
+	}
+
+	__proto._gameTitle=function(){
+		var gameTitle=new Text();
+		gameTitle.text="俄罗斯方块";
+		gameTitle.color='#FFFFFF';
+		gameTitle.fontSize=24;
+		gameTitle.font=Data.fontFamily;
+		gameTitle.stroke=5;
+		gameTitle.strokeColor='#000000';
+		gameTitle.bold=true;
+		gameTitle.pos(540,40);
+		Laya.stage.addChild(gameTitle);
 	}
 
 	return LayaSample;
@@ -3484,6 +3831,116 @@ var Event=(function(){
 
 
 /**
+*<code>Keyboard</code> 类的属性是一些常数，这些常数表示控制游戏时最常用的键。
+*/
+//class laya.events.Keyboard
+var Keyboard=(function(){
+	function Keyboard(){}
+	__class(Keyboard,'laya.events.Keyboard');
+	Keyboard.NUMBER_0=48;
+	Keyboard.NUMBER_1=49;
+	Keyboard.NUMBER_2=50;
+	Keyboard.NUMBER_3=51;
+	Keyboard.NUMBER_4=52;
+	Keyboard.NUMBER_5=53;
+	Keyboard.NUMBER_6=54;
+	Keyboard.NUMBER_7=55;
+	Keyboard.NUMBER_8=56;
+	Keyboard.NUMBER_9=57;
+	Keyboard.A=65;
+	Keyboard.B=66;
+	Keyboard.C=67;
+	Keyboard.D=68;
+	Keyboard.E=69;
+	Keyboard.F=70;
+	Keyboard.G=71;
+	Keyboard.H=72;
+	Keyboard.I=73;
+	Keyboard.J=74;
+	Keyboard.K=75;
+	Keyboard.L=76;
+	Keyboard.M=77;
+	Keyboard.N=78;
+	Keyboard.O=79;
+	Keyboard.P=80;
+	Keyboard.Q=81;
+	Keyboard.R=82;
+	Keyboard.S=83;
+	Keyboard.T=84;
+	Keyboard.U=85;
+	Keyboard.V=86;
+	Keyboard.W=87;
+	Keyboard.X=88;
+	Keyboard.Y=89;
+	Keyboard.Z=90;
+	Keyboard.F1=112;
+	Keyboard.F2=113;
+	Keyboard.F3=114;
+	Keyboard.F4=115;
+	Keyboard.F5=116;
+	Keyboard.F6=117;
+	Keyboard.F7=118;
+	Keyboard.F8=119;
+	Keyboard.F9=120;
+	Keyboard.F10=121;
+	Keyboard.F11=122;
+	Keyboard.F12=123;
+	Keyboard.F13=124;
+	Keyboard.F14=125;
+	Keyboard.F15=126;
+	Keyboard.NUMPAD=21;
+	Keyboard.NUMPAD_0=96;
+	Keyboard.NUMPAD_1=97;
+	Keyboard.NUMPAD_2=98;
+	Keyboard.NUMPAD_3=99;
+	Keyboard.NUMPAD_4=100;
+	Keyboard.NUMPAD_5=101;
+	Keyboard.NUMPAD_6=102;
+	Keyboard.NUMPAD_7=103;
+	Keyboard.NUMPAD_8=104;
+	Keyboard.NUMPAD_9=105;
+	Keyboard.NUMPAD_ADD=107;
+	Keyboard.NUMPAD_DECIMAL=110;
+	Keyboard.NUMPAD_DIVIDE=111;
+	Keyboard.NUMPAD_ENTER=108;
+	Keyboard.NUMPAD_MULTIPLY=106;
+	Keyboard.NUMPAD_SUBTRACT=109;
+	Keyboard.SEMICOLON=186;
+	Keyboard.EQUAL=187;
+	Keyboard.COMMA=188;
+	Keyboard.MINUS=189;
+	Keyboard.PERIOD=190;
+	Keyboard.SLASH=191;
+	Keyboard.BACKQUOTE=192;
+	Keyboard.LEFTBRACKET=219;
+	Keyboard.BACKSLASH=220;
+	Keyboard.RIGHTBRACKET=221;
+	Keyboard.QUOTE=222;
+	Keyboard.ALTERNATE=18;
+	Keyboard.BACKSPACE=8;
+	Keyboard.CAPS_LOCK=20;
+	Keyboard.COMMAND=15;
+	Keyboard.CONTROL=17;
+	Keyboard.DELETE=46;
+	Keyboard.ENTER=13;
+	Keyboard.ESCAPE=27;
+	Keyboard.PAGE_UP=33;
+	Keyboard.PAGE_DOWN=34;
+	Keyboard.END=35;
+	Keyboard.HOME=36;
+	Keyboard.LEFT=37;
+	Keyboard.UP=38;
+	Keyboard.RIGHT=39;
+	Keyboard.DOWN=40;
+	Keyboard.SHIFT=16;
+	Keyboard.SPACE=32;
+	Keyboard.TAB=9;
+	Keyboard.INSERT=45;
+	return Keyboard;
+})()
+
+
+/**
 *<p><code>KeyBoardManager</code> 是键盘事件管理类。该类从浏览器中接收键盘事件，并派发该事件。</p>
 *<p>派发事件时若 Stage.focus 为空则只从 Stage 上派发该事件，否则将从 Stage.focus 对象开始一直冒泡派发该事件。所以在 Laya.stage 上监听键盘事件一定能够收到，如果在其他地方监听，则必须处在Stage.focus的冒泡链上才能收到该事件。</p>
 *<p>用户可以通过代码 Laya.stage.focus=someNode 的方式来设置focus对象。</p>
@@ -4276,6 +4733,27 @@ var ColorFilterAction=(function(){
 })()
 
 
+/**
+*默认的FILTER,什么都不做
+*@private
+*/
+//class laya.filters.FilterAction
+var FilterAction=(function(){
+	function FilterAction(){
+		this.data=null;
+	}
+
+	__class(FilterAction,'laya.filters.FilterAction');
+	var __proto=FilterAction.prototype;
+	Laya.imps(__proto,{"laya.filters.IFilterAction":true})
+	__proto.apply=function(data){
+		return null;
+	}
+
+	return FilterAction;
+})()
+
+
 //class laya.filters.webgl.FilterActionGL
 var FilterActionGL=(function(){
 	function FilterActionGL(){}
@@ -4291,6 +4769,63 @@ var FilterActionGL=(function(){
 	});
 
 	return FilterActionGL;
+})()
+
+
+/**
+*@private
+*/
+//class laya.filters.WebGLFilter
+var WebGLFilter=(function(){
+	function WebGLFilter(){}
+	__class(WebGLFilter,'laya.filters.WebGLFilter');
+	WebGLFilter.enable=function(){
+		if (WebGLFilter.isInit)return;
+		WebGLFilter.isInit=true;
+		if (!Render$1.isWebGL)return;
+		RunDriver.createFilterAction=function (type){
+			var action;
+			switch (type){
+				case 0x20:
+					action=new ColorFilterActionGL();
+					break ;
+				case 0x10:
+					action=new BlurFilterActionGL();
+					break ;
+				case 0x08:
+					action=new GlowFilterActionGL();
+					break ;
+				}
+			return action;
+		}
+	}
+
+	WebGLFilter.isInit=false;
+	WebGLFilter.__init$=function(){
+		BlurFilterActionGL;
+		ColorFilterActionGL;
+		GlowFilterActionGL;
+		Render$1;
+		RunDriver;{
+			RunDriver.createFilterAction=function (type){
+				var action;
+				switch (type){
+					case 0x10:
+						action=new FilterAction();
+						break ;
+					case 0x08:
+						action=new FilterAction();
+						break ;
+					case 0x20:
+						action=new ColorFilterAction();
+						break ;
+					}
+				return action;
+			}
+		}
+	}
+
+	return WebGLFilter;
 })()
 
 
@@ -18750,6 +19285,52 @@ var CSSStyle=(function(_super){
 
 
 /**
+*模糊滤镜
+*/
+//class laya.filters.BlurFilter extends laya.filters.Filter
+var BlurFilter=(function(_super){
+	function BlurFilter(strength){
+		/**模糊滤镜的强度(值越大，越不清晰 */
+		this.strength=NaN;
+		this.strength_sig2_2sig2_gauss1=[];
+		BlurFilter.__super.call(this);
+		(strength===void 0)&& (strength=4);
+		if (Render$1.isWebGL)WebGLFilter.enable();
+		this.strength=strength;
+		this._action=RunDriver.createFilterAction(0x10);
+		this._action.data=this;
+	}
+
+	__class(BlurFilter,'laya.filters.BlurFilter',_super);
+	var __proto=BlurFilter.prototype;
+	/**
+	*@private 通知微端
+	*/
+	__proto.callNative=function(sp){
+		sp.conchModel &&sp.conchModel.blurFilter&&sp.conchModel.blurFilter(this.strength);
+	}
+
+	/**
+	*@private
+	*当前滤镜的类型
+	*/
+	__getset(0,__proto,'type',function(){
+		return 0x10;
+	});
+
+	/**
+	*@private
+	*当前滤镜对应的操作器
+	*/
+	__getset(0,__proto,'action',function(){
+		return this._action;
+	});
+
+	return BlurFilter;
+})(Filter)
+
+
+/**
 *<p><code>ColorFilter</code> 是颜色滤镜。使用 ColorFilter 类可以将 4 x 5 矩阵转换应用于输入图像上的每个像素的 RGBA 颜色和 Alpha 值，以生成具有一组新的 RGBA 颜色和 Alpha 值的结果。该类允许饱和度更改、色相旋转、亮度转 Alpha 以及各种其他效果。您可以将滤镜应用于任何显示对象（即，从 Sprite 类继承的对象）。</p>
 *<p>注意：对于 RGBA 值，最高有效字节代表红色通道值，其后的有效字节分别代表绿色、蓝色和 Alpha 通道值。</p>
 */
@@ -18804,6 +19385,128 @@ var ColorFilter=(function(_super){
 })(Filter)
 
 
+/**
+*发光滤镜(也可以当成阴影滤使用）
+*/
+//class laya.filters.GlowFilter extends laya.filters.Filter
+var GlowFilter=(function(_super){
+	function GlowFilter(color,blur,offX,offY){
+		/**滤镜的颜色*/
+		this._color=null;
+		GlowFilter.__super.call(this);
+		this._elements=new Float32Array(9);
+		(blur===void 0)&& (blur=4);
+		(offX===void 0)&& (offX=6);
+		(offY===void 0)&& (offY=6);
+		if (Render$1.isWebGL){
+			WebGLFilter.enable();
+		}
+		this._color=new Color$1(color);
+		this.blur=Math.min(blur,20);
+		this.offX=offX;
+		this.offY=offY;
+		this._action=RunDriver.createFilterAction(0x08);
+		this._action.data=this;
+	}
+
+	__class(GlowFilter,'laya.filters.GlowFilter',_super);
+	var __proto=GlowFilter.prototype;
+	/**@private */
+	__proto.getColor=function(){
+		return this._color._color;
+	}
+
+	/**
+	*@private 通知微端
+	*/
+	__proto.callNative=function(sp){
+		sp.conchModel &&sp.conchModel.glowFilter&&sp.conchModel.glowFilter(this._color.strColor,this._elements[4],this._elements[5],this._elements[6]);
+	}
+
+	/**@private */
+	/**@private */
+	__getset(0,__proto,'blur',function(){
+		return this._elements[4];
+		},function(value){
+		this._elements[4]=value;
+	});
+
+	/**@private */
+	/**@private */
+	__getset(0,__proto,'offY',function(){
+		return this._elements[6];
+		},function(value){
+		this._elements[6]=value;
+	});
+
+	/**@private */
+	/**@private */
+	__getset(0,__proto,'offX',function(){
+		return this._elements[5];
+		},function(value){
+		this._elements[5]=value;
+	});
+
+	/**@private */
+	__getset(0,__proto,'action',function(){
+		return this._action;
+	});
+
+	/**
+	*@private
+	*滤镜类型
+	*/
+	__getset(0,__proto,'type',function(){
+		return 0x08;
+	});
+
+	return GlowFilter;
+})(Filter)
+
+
+/**
+*@private
+*/
+//class laya.filters.webgl.BlurFilterActionGL extends laya.filters.webgl.FilterActionGL
+var BlurFilterActionGL=(function(_super){
+	function BlurFilterActionGL(){
+		this.data=null;
+		BlurFilterActionGL.__super.call(this);
+	}
+
+	__class(BlurFilterActionGL,'laya.filters.webgl.BlurFilterActionGL',_super);
+	var __proto=BlurFilterActionGL.prototype;
+	__proto.setValueMix=function(shader){
+		shader.defines.add(this.data.type);
+		var o=shader;
+	}
+
+	__proto.apply3d=function(scope,sprite,context,x,y){
+		var b=scope.getValue("bounds");
+		var shaderValue=Value2D.create(0x01,0);
+		shaderValue.setFilters([this.data]);
+		var tMatrix=Matrix.EMPTY;
+		tMatrix.identity();
+		context.ctx.drawTarget(scope,0,0,b.width,b.height,Matrix.EMPTY,"src",shaderValue);
+		shaderValue.setFilters(null);
+	}
+
+	__proto.setValue=function(shader){
+		shader.strength=this.data.strength;
+		var sigma=this.data.strength/3.0;
+		var sigma2=sigma*sigma;
+		this.data.strength_sig2_2sig2_gauss1[0]=this.data.strength;
+		this.data.strength_sig2_2sig2_gauss1[1]=sigma2;
+		this.data.strength_sig2_2sig2_gauss1[2]=2.0*sigma2;
+		this.data.strength_sig2_2sig2_gauss1[3]=1.0/(2.0*Math.PI*sigma2);
+		shader.strength_sig2_2sig2_gauss1=this.data.strength_sig2_2sig2_gauss1;
+	}
+
+	__getset(0,__proto,'typeMix',function(){return 0x10;});
+	return BlurFilterActionGL;
+})(FilterActionGL)
+
+
 //class laya.filters.webgl.ColorFilterActionGL extends laya.filters.webgl.FilterActionGL
 var ColorFilterActionGL=(function(_super){
 	function ColorFilterActionGL(){
@@ -18829,6 +19532,91 @@ var ColorFilterActionGL=(function(_super){
 	}
 
 	return ColorFilterActionGL;
+})(FilterActionGL)
+
+
+/**
+*@private
+*/
+//class laya.filters.webgl.GlowFilterActionGL extends laya.filters.webgl.FilterActionGL
+var GlowFilterActionGL=(function(_super){
+	function GlowFilterActionGL(){
+		this.data=null;
+		this._initKey=false;
+		this._textureWidth=0;
+		this._textureHeight=0;
+		GlowFilterActionGL.__super.call(this);
+	}
+
+	__class(GlowFilterActionGL,'laya.filters.webgl.GlowFilterActionGL',_super);
+	var __proto=GlowFilterActionGL.prototype;
+	Laya.imps(__proto,{"laya.filters.IFilterActionGL":true})
+	__proto.setValueMix=function(shader){}
+	__proto.apply3d=function(scope,sprite,context,x,y){
+		var b=scope.getValue("bounds");
+		scope.addValue("color",this.data.getColor());
+		var w=b.width,h=b.height;
+		this._textureWidth=w;
+		this._textureHeight=h;
+		var shaderValue;
+		var mat=Matrix.TEMP;
+		mat.identity();
+		shaderValue=Value2D.create(0x01,0);
+		shaderValue.setFilters([this.data]);
+		context.ctx.drawTarget(scope,0,0,this._textureWidth,this._textureHeight,mat,"src",shaderValue,null);
+		shaderValue=Value2D.create(0x01,0);
+		context.ctx.drawTarget(scope,0,0,this._textureWidth,this._textureHeight,mat,"src",shaderValue);
+		return null;
+	}
+
+	__proto.setSpriteWH=function(sprite){
+		this._textureWidth=sprite.width;
+		this._textureHeight=sprite.height;
+	}
+
+	__proto.setValue=function(shader){
+		shader.u_offsetX=this.data.offX;
+		shader.u_offsetY=-this.data.offY;
+		shader.u_strength=1.0;
+		shader.u_blurX=this.data.blur;
+		shader.u_blurY=this.data.blur;
+		shader.u_textW=this._textureWidth;
+		shader.u_textH=this._textureHeight;
+		shader.u_color=this.data.getColor();
+	}
+
+	__getset(0,__proto,'typeMix',function(){return 0x08;});
+	GlowFilterActionGL.tmpTarget=function(scope,sprite,context,x,y){
+		var b=scope.getValue("bounds");
+		var out=scope.getValue("out");
+		out.end();
+		var tmpTarget=RenderTarget2D.create(b.width,b.height);
+		tmpTarget.start();
+		var color=scope.getValue("color");
+		if (color){
+			tmpTarget.clear(color[0],color[1],color[2],0);
+		}
+		scope.addValue("tmpTarget",tmpTarget);
+	}
+
+	GlowFilterActionGL.startOut=function(scope,sprite,context,x,y){
+		var tmpTarget=scope.getValue("tmpTarget");
+		tmpTarget.end();
+		var out=scope.getValue("out");
+		out.start();
+		var color=scope.getValue("color");
+		if (color){
+			out.clear(color[0],color[1],color[2],0);
+		}
+	}
+
+	GlowFilterActionGL.recycleTarget=function(scope,sprite,context,x,y){
+		var src=scope.getValue("src");
+		var tmpTarget=scope.getValue("tmpTarget");
+		tmpTarget.recycle();
+	}
+
+	return GlowFilterActionGL;
 })(FilterActionGL)
 
 
@@ -27762,7 +28550,7 @@ var WebGLImage=(function(_super){
 })(HTMLImage)
 
 
-	Laya.__init([LoaderManager,EventDispatcher,LocalStorage,AtlasGrid,DrawText,Render$1,Timer,WebGLContext2D,ShaderCompile,Browser]);
+	Laya.__init([LoaderManager,EventDispatcher,WebGLFilter,LocalStorage,AtlasGrid,DrawText,Render$1,Timer,WebGLContext2D,ShaderCompile,Browser]);
 	/**LayaGameStart**/
 	new LayaSample();
 

@@ -12,8 +12,8 @@ Project configuration:/Users/zenoslin/Documents/GitHub/Tetris-Layabox/.actionScr
 1,0.00,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/src,0,Collect
 1,0.00,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/libs/laya/src,0,Collect
 1,2.00,,0,read class message
-1,89.84,,0,Disable Flash3D /Users/zenoslin/Documents/GitHub/Tetris-Layabox/src/LayaSample.as
-12,89.84,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/LayaSample.max.js,834006,
-11,89.84,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/LayaSample.max.html,874,
+1,89.68,,0,Disable Flash3D /Users/zenoslin/Documents/GitHub/Tetris-Layabox/src/LayaSample.as
+12,89.68,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/LayaSample.max.js,851540,
+11,89.68,/Users/zenoslin/Documents/GitHub/Tetris-Layabox/bin/h5/LayaSample.max.html,874,
 ******************************************************************************
-14,89.84,,0,
+14,89.68,,0,

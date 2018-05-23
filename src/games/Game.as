@@ -1,29 +1,17 @@
-package games {
+package games {	
 	import laya.events.Event;
 	import laya.events.KeyBoardManager;
+	import laya.events.Keyboard;
 
 	public class Game {
-		// 行列数
-		private var rowsNum:int = 20;
-		private var colsNum:int = 10;
-
-		private var data:Array;
-		public static var gameData:Array;
+		//private var data:Array;
 
 		private var nextShape:Object;
 		private var nextType:int;
 		private var nextData:Array; // 数据
 		private var nextOrigin:Object; // 原点
 		private var dir:int; // 方向
-
-		// 绑定按键
-		private var btnLeft:int = 37;
-		private var btnRight:int = 39;
-		private var btnDown:int = 40;
-		private var btnRotate:int = 38;
-
-		// 计时器
-
+		
 		// 创建实例
 		private var square:Square = new Square();
 		private var render:Render = new Render();
@@ -50,16 +38,17 @@ package games {
 		public function gameStart():void {
 			//_square||=new Square()
 			// 游戏矩形
-			gameData = [];
-			for (var i:int = 0; i < rowsNum; i++) {
-				gameData[i] = [];
-				for (var j:int = 0; j < colsNum; j++) {
-					gameData[i][j] = 0;
+			Data.gameData = [];
+			for (var i:int = 0; i < Data.rowsNum; i++) {
+				Data.gameData[i] = [];
+				for (var j:int = 0; j < Data.colsNum; j++) {
+					Data.gameData[i][j] = 0;
 				}
 			}
 			// trace(gameData);
-
-			render.startRender(gameData);
+			render.clearBlurFilter();
+			nextSquare();
+			render.startRender(Data.gameData);
 		}
 
 
@@ -81,7 +70,7 @@ package games {
 			nextData = nextShape.data;
 			nextType = nextShape.type;
 			setData(nextData);
-			render.refresh(gameData);
+			render.refresh(Data.gameData);
 			autoFall();
 		}
 
@@ -90,7 +79,7 @@ package games {
 			for (var i:int = 0; i < nextData.length; i++) {
 				for (var j:int = 0; j < nextData[0].length; j++) {
 					if (check(nextOrigin, j, i)) {
-						gameData[nextOrigin.y + i][nextOrigin.x + j] = nextData[i][j];
+						Data.gameData[nextOrigin.y + i][nextOrigin.x + j] = nextData[i][j];
 					}
 				}
 			}
@@ -101,7 +90,7 @@ package games {
 			for (var i:int = 0; i < nextData.length; i++) {
 				for (var j:int = 0; j < nextData[0].length; j++) {
 					if (check(nextOrigin, j, i)) {
-						gameData[nextOrigin.y + i][nextOrigin.x + j] = 0;
+						Data.gameData[nextOrigin.y + i][nextOrigin.x + j] = 0;
 					}
 				}
 			}
@@ -114,28 +103,32 @@ package games {
 
 		// 控制
 		public function console():void {
-			if (KeyBoardManager.hasKeyDown(btnDown)) {
+			if (KeyBoardManager.hasKeyDown(Keyboard.DOWN)) {
 				controlDown();
-			} else if (KeyBoardManager.hasKeyDown(btnLeft)) {
+			} else if (KeyBoardManager.hasKeyDown(Keyboard.LEFT)) {
 				controlLeft();
-			} else if (KeyBoardManager.hasKeyDown(btnRight)) {
+			} else if (KeyBoardManager.hasKeyDown(Keyboard.RIGHT)) {
 				controlRight();
-			} else if (KeyBoardManager.hasKeyDown(btnRotate)) {
+			} else if (KeyBoardManager.hasKeyDown(Keyboard.UP)) {
 				rotate();
+			} else if (KeyBoardManager.hasKeyDown(Keyboard.SPACE)) {
+				fall();
 			}
 		}
 
 		// 下、左、右
-		public function controlDown():void {
+		public function controlDown():Boolean {
 			if (canDown()) {
 				clearData(nextData);
 				nextOrigin.y = nextOrigin.y + 1;
 				setData(nextData);
-				render.refresh(gameData);
+				render.refresh(Data.gameData);
+				return true;
 			} else {
 				fixed();
 				checkClear();
-				render.refresh(gameData);
+				render.refresh(Data.gameData);
+				return false;
 			}
 		}
 
@@ -144,7 +137,7 @@ package games {
 				clearData(nextData);
 				nextOrigin.x = nextOrigin.x - 1;
 				setData(nextData);
-				render.refresh(gameData);
+				render.refresh(Data.gameData);
 			}
 		}
 
@@ -153,10 +146,10 @@ package games {
 				clearData(nextData);
 				nextOrigin.x = nextOrigin.x + 1;
 				setData(nextData);
-				render.refresh(gameData);
+				render.refresh(Data.gameData);
 			}
 		}
-
+		// 旋转
 		public function rotate():void {
 			if (canRotate()) {
 				clearData(nextData);
@@ -169,10 +162,14 @@ package games {
 					}
 				}
 				setData(nextData);
-				render.refresh(gameData);
+				render.refresh(Data.gameData);
 			}
 		}
-
+		// 下落
+		public function fall():void {
+			while (controlDown());
+		}
+		
 		public function chooseType():Array {
 			switch (nextType) {
 				case 1:
@@ -232,13 +229,13 @@ package games {
 		public function check(pos, x, y):Boolean {
 			if (pos.y + y < 0) {
 				return false;
-			} else if (pos.y + y >= gameData.length) {
+			} else if (pos.y + y >= Data.gameData.length) {
 				return false;
 			} else if (pos.x + x < 0) {
 				return false;
-			} else if (pos.x + x >= gameData[0].length) {
+			} else if (pos.x + x >= Data.gameData[0].length) {
 				return false;
-			} else if (gameData[pos.y + y][pos.x + x] === Render.fixBox) {
+			} else if (Data.gameData[pos.y + y][pos.x + x] === Data.fixBox) {
 				return false;
 			} else {
 				return true;
@@ -261,10 +258,10 @@ package games {
 
 		// 方块移动到底部固定
 		public function fixed():void {
-			for (var i:int = 0; i < gameData.length; i++) {
-				for (var j:int = 0; j < gameData[0].length; j++) {
-					if (gameData[i][j] == Render.fallBox) {
-						gameData[i][j] = Render.fixBox;
+			for (var i:int = 0; i < Data.gameData.length; i++) {
+				for (var j:int = 0; j < Data.gameData[0].length; j++) {
+					if (Data.gameData[i][j] == Data.fallBox) {
+						Data.gameData[i][j] = Data.fixBox;
 					}
 				}
 			}
@@ -274,10 +271,10 @@ package games {
 		// 消行
 		public function checkClear():int {
 			var line:int = 0;
-			for (var i:int = gameData.length - 1; i >= 0; i--) {
+			for (var i:int = Data.gameData.length - 1; i >= 0; i--) {
 				var clear:Boolean = true;
-				for (var j:int = 0; j < gameData[0].length; j++) {
-					if (gameData[i][j] != 2) {
+				for (var j:int = 0; j < Data.gameData[0].length; j++) {
+					if (Data.gameData[i][j] != 2) {
 						clear = false;
 						break;
 					}
@@ -285,12 +282,12 @@ package games {
 				if (clear) {
 					line++;
 					for (var m:int = i; m > 0; m--) {
-						for (var n:int = 0; n < gameData[0].length; n++) {
-							gameData[m][n] = gameData[m - 1][n];
+						for (var n:int = 0; n < Data.gameData[0].length; n++) {
+							Data.gameData[m][n] = Data.gameData[m - 1][n];
 						}
 					}
-					for (var k:int = 0; k < gameData[0].length; k++) {
-						gameData[0][k] = 0;
+					for (var k:int = 0; k < Data.gameData[0].length; k++) {
+						Data.gameData[0][k] = 0;
 					}
 					i++;
 				}
@@ -305,8 +302,8 @@ package games {
 		// 检查游戏结束
 		public function checkGameOver():Boolean {
 			var gameOver:Boolean = false;
-			for (var i:int = 0; i < gameData[0].length; i++) {
-				if (gameData[1][i] === Render.fixBox) {
+			for (var i:int = 0; i < Data.gameData[0].length; i++) {
+				if (Data.gameData[0][i] === Data.fixBox) {
 					gameOver = true;
 				}
 			}
@@ -317,8 +314,8 @@ package games {
 		public function gameOver():void {
 			if (checkGameOver()) {
 				Laya.timer.clearAll(this);
-				render.createBlurFilter();
 				render.overText();
+				render.createBlurFilter();
 			} else {
 				nextSquare();
 			}

@@ -86,6 +86,46 @@ package games {
 			]
 			return rotates[index];
 		}
+		// 方块J
+		public function shapeJ():Array {
+			data = [
+				[0, 1, 0, 0], 
+				[0, 1, 0, 0], 
+				[1, 1, 0, 0], 
+				[0, 0, 0, 0]
+			];
+			return data;
+		}
+		public function roShapeJ(index):Array{
+			var rotates:Array = [
+				[
+					[0, 1, 0, 0], 
+					[0, 1, 0, 0], 
+					[1, 1, 0, 0], 
+					[0, 0, 0, 0]
+				],
+				[
+					[1, 1, 1, 0], 
+					[1, 0, 0, 0], 
+					[0, 0, 0, 0], 
+					[0, 0, 0, 0]
+				],
+				[
+					[0, 1, 1, 0], 
+					[0, 0, 1, 0], 
+					[0, 0, 1, 0], 
+					[0, 0, 0, 0]
+				],
+				[
+					[0, 0, 0, 0], 
+					[0, 0, 1, 0], 
+					[1, 1, 1, 0], 
+					[0, 0, 0, 0]
+				]
+				
+			]
+			return rotates[index];
+		}
 		// 方块O
 		public function shapeO():Array {
 			data = [
