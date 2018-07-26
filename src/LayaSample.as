@@ -1,7 +1,7 @@
 ﻿package {
-	import games.Game;
+	import games.Data;
 	import games.Local;
-
+	
 	import laya.display.Sprite;
 	import laya.display.Stage;
 	import laya.display.Text;
@@ -31,13 +31,13 @@
 		private function _backGround():void {
 			var backGround:Sprite = new Sprite;
 			Laya.stage.addChild(backGround);
-			backGround.graphics.drawRect(0, 0, 800, 800, "#FFF68F");
+			backGround.graphics.drawRect(400, 0, 400, 800, "#FFF68F");
 		}
 
 		private function _gameBox():void {
 			var boxBorder:Sprite = new Sprite();
 			Laya.stage.addChild(boxBorder);
-			boxBorder.graphics.drawRect(520, 80, 160, 160, "#FFFFFf", "#000000", 2);
+			boxBorder.graphics.drawRect(520, 80, 160, 160, "#FFFFFF", "#000000", 2);
 		}
 
 		private function _gameTitle():void {
@@ -45,7 +45,7 @@
 			gameTitle.text = "俄罗斯方块";
 			gameTitle.color = '#FFFFFF';
 			gameTitle.fontSize = 24;
-			gameTitle.font = "Arial";
+			gameTitle.font = Data.fontFamily;
 			gameTitle.stroke = 5;
 			gameTitle.strokeColor = '#000000';
 			gameTitle.bold = true;
